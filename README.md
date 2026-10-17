@@ -2,6 +2,19 @@
 
 Statisches Recherchewerkzeug für **85622 Feldkirchen bei München (100 km)**. Es werden **keine erfundenen Angebote** angezeigt.
 
+## ImmoScout24-Suchauftrag Feldkirchen
+
+Unter **Portale durchsuchen → ImmoScout24 · dein Suchauftrag** gibt es jetzt direkte Suchlinks für **Häuser kaufen** mit Mittelpunkt **48.14786 / 11.72973**:
+
+- **50 km:** Die Entfernung aus dem übermittelten Suchauftrag.
+- **100 km:** Die auf das ImmoRadar-Projektziel erweiterte Entfernung.
+
+Die öffentlich in `saved-search.js` hinterlegten Such-URLs enthalten **keine** persönliche gespeicherte Suchauftrag-ID, E-Mail-Marketingparameter oder Tracking-ID. Die neue 100-km-Websuche aktualisiert **nicht** die Einstellungen oder E-Mail-Benachrichtigungen des gespeicherten Suchauftrags bei ImmoScout24.
+
+Wer seinen vollständigen persönlichen Suchauftragslink direkt im Portal öffnen möchte, kann ihn **bewusst im eigenen Browser** hinterlegen. Der vollständige Link bleibt ausschließlich in `localStorage` auf dem jeweiligen Gerät und wird nicht ins GitHub-Repository, einen Server oder in `data/listings.json` geschrieben. Es werden nur HTTPS-Suchlinks der ImmoScout24-Domains akzeptiert; über die Funktion erfolgt **kein automatisiertes Auslesen** der Trefferliste. Entfernen ist über denselben Bereich möglich.
+
+Eine gespeicherte Suche mit E-Mail-Benachrichtigungen bietet noch keinen API-Zugriff. Ein späterer E-Mail-Workflow benötigt die ausdrückliche Verbindung der Mailbox und muss die Nutzungsbedingungen des Portals beachten.
+
 ## Funktionen
 
 - Externe Suchlinks zu 6 Immobilienportalen: Sanierungsobjekte, Preisreduzierungen, Privatverkauf, Versteigerung. Die Links sind **keine Live-API** und die Entfernung ist im Originalportal zu prüfen.
