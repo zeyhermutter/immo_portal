@@ -1,4 +1,4 @@
 {
-  "comment": "Nur Datenquellen mit expliziter Erlaubnis zur automatisierten Abfrage UND Veröffentlichung konfigurieren. Keine Portalseiten scrapen. Siehe README.",
+  "comment": "Nur HTTPS-JSON-Feeds mit nachweislicher Erlaubnis für automatischen Abruf (termsApproved), öffentliche Darstellung (redistributionApproved), Preis-/Schnäppchenanalysen (analysisApproved) und Speicherung inkl. Historie (retentionApproved) aktivieren. Offizielle Portale nur nach gesonderten Vertragsrechten; keine HTML-Seiten scrapen. Token niemals hier speichern, sondern GitHub Actions Secret IMMO_FEED_TOKEN verwenden; Dokumentation docs/PORTAL_ACCESS.md.",
   "feeds": []
 }
