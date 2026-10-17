@@ -2,6 +2,24 @@
 
 Statisches Recherchewerkzeug für **85622 Feldkirchen bei München (100 km)**. Es werden **keine erfundenen Angebote** angezeigt.
 
+## Suchbenachrichtigungen aus E-Mails auswerten
+
+Neu: Der Tab **„E-Mail-Treffer“** verarbeitet von dir selbst exportierte **ImmoScout24-Suchbenachrichtigungen** direkt im Browser. Es gibt **keine Gmail-Verbindung** im Webportal und aktuell keine automatische Hintergrundauswertung des E-Mail-Postfachs.
+
+1. Eine ImmoScout24-Benachrichtigung in deinem E-Mail-Programm öffnen. In Gmail bietet das Nachrichtenmenü „Nachricht herunterladen“ eine \`.eml\`-Datei. Alternative Mailprogramme können ebenfalls \`.eml\` exportieren.
+2. ImmoRadar öffnen, Tab **E-Mail-Treffer** wählen, eine oder mehrere EML-Dateien auswählen (maximal 30 pro Import und je 2 MB).
+3. Auf **„Anzeigenlinks auslesen“** klicken. Die Datei wird ausschließlich lokal verarbeitet; es wird **kein Netzwerkabruf** gestartet. Gespeichert werden nur kanonische \`https://www.immobilienscout24.de/expose/NUMMER\`-Links sowie das lokale Importdatum, Wiederholungszähler und der Prüffortschritt. **Nicht gespeichert werden** vollständige E-Mail, Absender, Betreff, Preisangaben, Trackingparameter oder Konto-/Suchauftrags-IDs.
+4. Direkt auf **„Anzeige öffnen“** klicken, um das Angebot im Portal zu prüfen. Mit **„Objekt erfassen“** öffnet sich ein vorbefüllter Datensatz für eigene Preis-, Flächen- und Marktwertannahmen. Ohne von dir eingegebenen Marktwert wird kein Schnäppchen-Score ausgegeben.
+5. Gesehene Links als geprüft markieren oder die gesamte lokale Linkliste löschen.
+
+Grenzen: Der Importer erkennt **direkte** ImmoScout24-Exposé-URLs in Text-, HTML-, MIME-, quoted-printable- und Base64-EML-Nachrichten. Werden statt der Original-URL nur Tracking-/Redirect-Links verschickt, wird diesen **nicht automatisch gefolgt**; die Datei kann dann 0 erkennbare Exposé-Links ergeben. Die Authentizität der E-Mail und der Status der Anzeige werden nicht automatisiert geprüft. „Neu“ heißt *neu in deinem lokalen Browser*, nicht unbedingt frisch bei ImmoScout24 veröffentlicht. Das ist keine Live-Datenbank, kein automatisches Postfach-Monitoring und keine vertragliche Erlaubnis zur Massenauswertung. Die gespeicherten Links sind gerätespezifisch und verschwinden, wenn der Browser-Speicher gelöscht wird.
+
+**Datenschutz:** ImmoRadar speichert keine Zugangsdaten, versendet weder E-Mail-Inhalte noch personenbezogene Suchauftragsinformationen an GitHub und kontaktiert beim EML-Import keine externen Server. Der Benutzer öffnet die Originalanzeige nur durch eigenen Klick. Die restliche Website kann externe Karten- und Schriftressourcen laden.
+
+**ChatGPT-Mailverbindung:** Eine separat vom Nutzer freigegebene Gmail- oder Outlook-Verbindung in ChatGPT kann bei Bedarf für die Suche nach entsprechenden E-Mails in ChatGPT verwendet werden. Sie wird **nicht automatisch an diese statische GitHub-Pages-Website weitergereicht**. Vollautomatische regelmäßige Postfachverarbeitung würde zusätzliche OAuth-Freigaben und einen sicheren serverseitigen Dienst erfordern.
+
+Test: \`node tests/email-parser.test.mjs\` (synthetische, nicht persönliche Beispiel-E-Mails).
+
 ## ImmoScout24-Suchauftrag Feldkirchen
 
 Unter **Portale durchsuchen → ImmoScout24 · dein Suchauftrag** gibt es jetzt direkte Suchlinks für **Häuser kaufen** mit Mittelpunkt **48.14786 / 11.72973**:
@@ -142,6 +160,9 @@ node --check cockpit.js
 node --check scripts/sync-feeds.mjs
 node --check research.js
 node --check portal-access.js
+node --check email-parser.js
+node --check email-alerts.js
+node tests/email-parser.test.mjs
 node tests/market-check.mjs
 node scripts/sync-feeds.mjs --check
 python3 -m http.server 8000
