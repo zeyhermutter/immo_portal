@@ -59,7 +59,7 @@ async function fetchFeed(f){
  const headers={Accept:'application/json','User-Agent':'ImmoRadar-approved-feed-import/1.1 (+https://github.com/zeyhermutter/immo_portal)'};
  if(f.auth==='bearer-env'){
   const token=process.env.IMMO_FEED_TOKEN;
-  if(!token||/[\\r\\n]/.test(token))throw Error('Authorized feed token missing or invalid: configure the IMMO_FEED_TOKEN GitHub Actions secret');
+  if(!token||/[\r\n]/.test(token))throw Error('Authorized feed token missing or invalid: configure the IMMO_FEED_TOKEN GitHub Actions secret');
   headers.Authorization='Bearer '+token;
  }
  const resp=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(18000),headers});
