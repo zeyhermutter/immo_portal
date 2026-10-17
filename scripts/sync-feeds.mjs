@@ -42,7 +42,9 @@ function validatedFeeds(document){
  if(!document||!Array.isArray(document.feeds))throw Error('config/feeds.json must contain feeds: []');
  return document.feeds.filter(f=>{
   if(!f.enabled)return false;
-  if(f.termsApproved!==true||f.redistributionApproved!==true)throw Error('Enabled feed '+str(f.name)+' is missing both permission confirmations');
+  if(f.termsApproved!==true||f.redistributionApproved!==true||f.analysisApproved!==true||f.retentionApproved!==true)
+   throw Error('Enabled feed '+str(f.name)+' needs documented permissions for access, publication, analysis and retention');
+  if(f.auth!==undefined&&f.auth!=='none'&&f.auth!=='bearer-env')throw Error('Unknown feed authentication type; only none or bearer-env supported');
   if(f.format!=='json')throw Error('Only JSON feeds supported; '+str(f.name));
   const url=new URL(f.url);
   const host=str(f.allowedHost).toLowerCase();
@@ -54,7 +56,13 @@ function validatedFeeds(document){
 }
 async function fetchFeed(f){
  const host=str(f.allowedHost).toLowerCase(),url=validUrl(f.url,host);
- const resp=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(18000),headers:{Accept:'application/json','User-Agent':'ImmoRadar-approved-feed-import/1.0 (+https://github.com/zeyhermutter/immo_portal)'}});
+ const headers={Accept:'application/json','User-Agent':'ImmoRadar-approved-feed-import/1.1 (+https://github.com/zeyhermutter/immo_portal)'};
+ if(f.auth==='bearer-env'){
+  const token=process.env.IMMO_FEED_TOKEN;
+  if(!token||/[\\r\\n]/.test(token))throw Error('Authorized feed token missing or invalid: configure the IMMO_FEED_TOKEN GitHub Actions secret');
+  headers.Authorization='Bearer '+token;
+ }
+ const resp=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(18000),headers});
  if(!resp.ok)throw Error(str(f.name)+': HTTP '+resp.status);
  const length=Number(resp.headers.get('content-length')||0);
  if(length>MAX_BYTES)throw Error(str(f.name)+': feed too large');
