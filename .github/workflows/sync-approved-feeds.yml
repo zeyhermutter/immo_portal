@@ -27,6 +27,10 @@ jobs:
           node --check cockpit.js
           node --check research.js
           node --check portal-access.js
+          node --check email-parser.js
+          node --check email-alerts.js
+          node --check tests/email-parser.test.mjs
+          node tests/email-parser.test.mjs
           node --check tests/market-check.mjs
           node tests/market-check.mjs
           node scripts/sync-feeds.mjs --check
