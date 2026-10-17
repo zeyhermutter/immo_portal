@@ -1,0 +1,4 @@
+{
+  "comment": "Nur Datenquellen mit expliziter Erlaubnis zur automatisierten Abfrage UND Veröffentlichung konfigurieren. Keine Portalseiten scrapen. Siehe README.",
+  "feeds": []
+}
