@@ -9,7 +9,7 @@ const money=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',ma
 const num=v=>Math.max(0,Number(v)||0);
 const httpUrl=v=>{try{const u=new URL(v);return /^https?:$/.test(u.protocol)?u.href:''}catch{return''}};
 const date=s=>{const d=new Date(s);return Number.isFinite(d.getTime())?d.toLocaleDateString('de-DE'):'—'};
-const uid=()=>crypto?.randomUUID?.()||('p-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+const uid=()=>globalThis.crypto?.randomUUID?.()||('p-'+Date.now()+'-'+Math.random().toString(36).slice(2));
 function read(){try{const r=JSON.parse(localStorage.getItem(KEY)||'{}');return r&&typeof r==='object'?r:{}}catch{return{}}}
 const saved=read();
 const state={history:saved.history||{},plans:saved.plans||{},notes:saved.notes||{},profiles:Array.isArray(saved.profiles)?saved.profiles:[],minDrop:Number.isFinite(+saved.minDrop)?+saved.minDrop:5,feedCount:0,feedTimestamp:null,feedStatus:'Noch keine Datenfeeds eingelesen.'};
@@ -66,7 +66,7 @@ function short(o){const c=score(o),d=radius(o),r=reduction(o);
 function ranking(){return tracked().filter(o=>score(o)).sort((a,b)=>score(b).points-score(a).points)}
 function overview(){
  const items=tracked(),deals=ranking(),drops=items.filter(o=>reduction(o)),mapped=items.filter(o=>radius(o)!==null);
- const summary='<div class="cockpit-kpis"><div><span>Erfasste Objekte</span><strong>'+items.length+'</strong></div><div><span>Mit Vergleichswert</span><strong>'+deals.length+'</strong></div><div><span>Preisreduzierungen</span><strong>'+drops.length+'</strong></div><div><span>Standort verifiziert</span><strong>'+mapped.length+'</strong></div></div>';
+ const summary='<div class="cockpit-kpis"><div><span>Erfasste Objekte</span><strong>'+items.length+'</strong></div><div><span>Mit Vergleichswert</span><strong>'+deals.length+'</strong></div><div><span>Preisreduzierungen</span><strong>'+drops.length+'</strong></div><div><span>Mit Koordinaten</span><strong>'+mapped.length+'</strong></div></div>';
  const help='<div class="notice"><strong>Keine erfundenen Schnäppchen:</strong> Der Score ist eine modellbasierte Arbeitshilfe, keine Marktwertermittlung. Ohne selbst erfassten Marktwert wird kein Deal-Score vergeben. Standortprüfung nur bei Koordinaten. Automatische Portalabfragen erfolgen ausschließlich über gesondert freigegebene Datenfeeds.</div>';
  const method='<p class="muted">Score-Formel: 50 + 2 × rechnerischer Abschlag in Prozentpunkten (nach Kaufneben- und Sanierungskosten) + 5 bei Koordinaten im 100-km-Kreis + 5 bei vollständiger Fläche/Beschreibung + 5 bei dokumentierter Preisreduzierung, begrenzt auf 0–100. Der Wert hängt von deinen Annahmen ab.</p>';
  const top=deals.length?deals.slice(0,8).map(short).join(''):'<div class="cockpit-empty">Noch keine bewertbaren Objekte. Ergänze Kaufpreis und geschätzten Marktwert in „Meine Objekte“.</div>';
