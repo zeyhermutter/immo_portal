@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-10-17",
+  "description": "Handverlesene Links zu aktuell auf amtlicher Primärquelle veröffentlichten Angeboten; keine automatisierte Erfassung und keine Lizenz zur Massendatenweitergabe.",
+  "properties": [
+    {
+      "id": "bayern-lechel-2026",
+      "title": "Grundstück mit Altbestand – Lechelstraße 10a",
+      "source": "Immobilien Freistaat Bayern",
+      "url": "https://immobilien.bayern.de/immobilien/verkaeufe/rv1/grundstueck-mit-altbestand-lechelstrasse-10a/index.html",
+      "location": "80997 München",
+      "price": 990000,
+      "priceLabel": "Amtliche Preisvorstellung (Höchstgebotverfahren)",
+      "area": 135,
+      "kind": "Haus",
+      "description": "Einfamilienhaus mit Altbestand; amtliche Objektveröffentlichung. Zustand und weitere Rechte laut Originalexposé prüfen.",
+      "deadline": "2026-11-22",
+      "energyClass": "H"
+    },
+    {
+      "id": "bayern-weidmann-2026",
+      "title": "Grundstück mit Altbestand – Weidmannstraße 48",
+      "source": "Immobilien Freistaat Bayern",
+      "url": "https://immobilien.bayern.de/immobilien/verkaeufe/rv1/grundstueck-mit-altbestand-in-80997-muenchen-weidmannstrasse-48/index.html",
+      "location": "80997 München",
+      "price": 2450000,
+      "priceLabel": "Amtliche Preisvorstellung (Höchstgebotverfahren)",
+      "area": 215,
+      "kind": "Haus",
+      "description": "Doppelhaushälfte auf Grundstück mit Altbestand; amtliche Objektveröffentlichung. Zustand und weitere Rechte laut Originalexposé prüfen.",
+      "deadline": "2026-11-22",
+      "energyClass": "H"
+    },
+    {
+      "id": "bayern-waldhorn-2026",
+      "title": "Grundstück mit Altbestand – Waldhornstraße 18",
+      "source": "Immobilien Freistaat Bayern",
+      "url": "https://www.immobilien.bayern.de/immobilien/verkaeufe/rv1/grundstueck-mit-altbestand-in-80997-muenchen-waldhornstrasse-18/index.html",
+      "location": "80997 München",
+      "price": 3740000,
+      "priceLabel": "Amtliche Preisvorstellung (Höchstgebotverfahren)",
+      "area": 200,
+      "kind": "Haus",
+      "description": "Einfamilienhaus auf Grundstück mit Altbestand; amtliche Objektveröffentlichung. Zustand, Schutzgebiet und weitere Rechte laut Originalexposé prüfen.",
+      "deadline": "2026-11-22",
+      "energyClass": "H"
+    }
+  ]
+}
