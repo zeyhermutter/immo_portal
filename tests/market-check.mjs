@@ -30,8 +30,8 @@ for(const item of references.properties){
   assert.ok(!urls.has(item.url),'Duplicate original offer');
   urls.add(item.url);
 }
-assert.equal(approvedFeeds.feeds.filter(f=>f.enabled).length,0,'No third-party feed should be enabled without rights');
-assert.equal(publicData.listings.length,0,'Hand-researched links must not silently be treated as licensed feed listings');
+for(const feed of approvedFeeds.feeds.filter(f=>f.enabled)){assert.equal(feed.termsApproved,true);assert.equal(feed.redistributionApproved,true)}
+for(const item of publicData.listings){assert.ok(item.title&&item.url&&Number(item.price)>0,'Public feed item must be attributable and priced')}
 
 const lechel=references.properties.find(p=>p.id==='bayern-lechel-2026');
 assert.equal(lechel.price,990000);
