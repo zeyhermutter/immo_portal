@@ -22,6 +22,10 @@ jobs:
       - name: Validate and import only permitted JSON feeds
         run: |
           node --check scripts/sync-feeds.mjs
+          node --check cockpit.js
+          node --check research.js
+          node --check tests/market-check.mjs
+          node tests/market-check.mjs
           node scripts/sync-feeds.mjs --check
           node scripts/sync-feeds.mjs
       - name: Commit updated public data only when changed
