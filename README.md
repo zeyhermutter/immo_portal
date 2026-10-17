@@ -12,6 +12,7 @@ Statisches Recherchewerkzeug für **85622 Feldkirchen bei München (100 km)**. E
 - Preisverlauf aus lokal beobachteten Preisänderungen derselben Anzeigen-URL.
 - Suchprofile, lokale Preisänderungshinweise, Objektakten mit Notizen und Besichtigungs-Checklisten.
 - Analyse-CSV-Export.
+- **API-Anbindungen:** neue Übersicht zu ImmoScout24, immowelt, Kleinanzeigen, Immonet und freigegebenen Maklerfeeds. Es handelt sich ausdrücklich um eine Zugangs-/Lizenzübersicht, nicht um bereits laufende Portal-API-Verbindungen. Dokumentation: [docs/PORTAL_ACCESS.md](docs/PORTAL_ACCESS.md).
 
 ## Reale Fundstellen aus amtlicher Primärquelle (Stand 17.10.2026)
 
@@ -50,7 +51,7 @@ Die Portalverlinkungen sind externe Suchlinks, **kein Scraping**. Für automatis
 Zum Aktivieren:
 
 1. Vom Datenanbieter eine ausdrückliche Berechtigung für automatisierte Abrufe **und Veröffentlichung/Weitergabe** der Daten einholen und alle Lizenz-/Datenschutzbedingungen prüfen.
-2. In config/feeds.json einen Feed hinterlegen; Bedingungen über termsApproved: true und redistributionApproved: true bestätigen, aber nur wenn diese Erlaubnisse tatsächlich vorliegen. enabled muss true sein. Format ist momentan ausschließlich json.
+2. In config/feeds.json einen Feed hinterlegen; Bedingungen über termsApproved: true, redistributionApproved: true, analysisApproved: true und retentionApproved: true bestätigen, aber nur wenn diese Erlaubnisse tatsächlich vorliegen. enabled muss true sein. Format ist momentan ausschließlich json.
 3. Erforderliche Feed-Eigenschaften sind name, url und allowedHost. Die URL muss https sein und exakt zu allowedHost passen. Kein Scraping, keine Umleitungen, keine Zugangsdaten oder API-Keys.
 4. Der JSON-Feed muss ein Array oder ein Objekt mit items- oder results-Array zurückgeben. Jedes Angebot benötigt title, url (https) und price (>0). Optional: kind, location, description, area, lat, lon. Feldzuordnungen können in fields als Objekt gesetzt werden; auch Pfade wie details.price werden unterstützt.
 5. Mit Node 22+ ausführen: node scripts/sync-feeds.mjs --check; danach node scripts/sync-feeds.mjs. Der Workflow in .github/workflows/sync-approved-feeds.yml ist manuell startbar und zusätzlich täglich geplant. Ohne aktivierte Quellen tut er nichts. Bei Feed-Fehlern bleibt die vorherige Datendatei unverändert.
@@ -66,6 +67,9 @@ Zum Aktivieren:
       "enabled": true,
       "termsApproved": true,
       "redistributionApproved": true,
+      "analysisApproved": true,
+      "retentionApproved": true,
+      "auth": "none",
       "format": "json",
       "url": "https://feed.example.org/immobilien.json",
       "allowedHost": "feed.example.org",
@@ -82,6 +86,8 @@ Zum Aktivieren:
   ]
 }
 ~~~
+
+**Zugangsschutz:** Für ausdrücklich freigegebene HTTPS-JSON-Feeds mit Bearer-Token kann `auth: "bearer-env"` aktiviert werden. Der geheime Token liegt ausschließlich als GitHub Actions Secret `IMMO_FEED_TOKEN`, niemals in GitHub Pages oder config/feeds.json. Portale wie ImmoScout24 oder immowelt benötigen einen gesondert genehmigten Vertrag und ggf. andere Authentifizierung; die generische Schnittstelle umgeht dies nicht.
 
 **Sicherheit:** data/listings.json ist bei diesem öffentlichen GitHub-Repository öffentlich lesbar. Keine privaten Verträge, persönlichen Kontaktdaten, Geheimnisse oder nicht zur Veröffentlichung freigegebenen Inserate dort ablegen. Ohne explizite Rechte keine fremden Portale automatisiert auslesen.
 
@@ -122,6 +128,7 @@ scripts/sync-feeds.mjs             Kontrollierter JSON-Import
 node --check cockpit.js
 node --check scripts/sync-feeds.mjs
 node --check research.js
+node --check portal-access.js
 node tests/market-check.mjs
 node scripts/sync-feeds.mjs --check
 python3 -m http.server 8000
