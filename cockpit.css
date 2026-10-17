@@ -1,0 +1,37 @@
+/* Additional cockpit components – scoped to avoid disturbing the existing interface. */
+#overviewView,#mapView,#renoplanView,#priceView,#profilesView,#alertsView,#dossierView{min-width:0}
+.cockpit-box{border:1px solid #2b4059;background:#111f34;border-radius:16px;padding:20px;margin:0 0 16px}
+.cockpit-box h3{font-size:17px;margin:0 0 16px}
+.cockpit-columns{display:grid;grid-template-columns:1.15fr .85fr;gap:15px}
+.cockpit-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:2px 0 18px}
+.cockpit-kpis>div{padding:18px;border:1px solid #29435a;border-radius:14px;background:#13283b}
+.cockpit-kpis span{display:block;font-size:12px;color:#a6b9cc;margin-bottom:8px}
+.cockpit-kpis strong{font-size:clamp(17px,2.3vw,27px);font-weight:800;color:#e7f3ff;overflow-wrap:anywhere}
+.cockpit-result{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:16px 0;border-bottom:1px solid #2b4155}
+.cockpit-result:first-of-type{padding-top:6px}
+.cockpit-result:last-of-type{border-bottom:0}
+.cockpit-result>div:first-child{min-width:0}
+.cockpit-result strong{overflow-wrap:anywhere}
+.cockpit-result .small{line-height:1.6;margin-top:5px}
+.cockpit-result-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right;flex-shrink:0}
+.cockpit-score{font-size:11px;border:1px solid #347a6e;background:#12483f;border-radius:99px;color:#6ef5ce;padding:5px 9px;white-space:nowrap}
+.cockpit-link{color:#60e5bf;font-size:12px;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.cockpit-empty{text-align:center;padding:22px 12px;color:#a7b9ce;font-size:13px;line-height:1.6;border:1px dashed #39506a;border-radius:10px}
+.cockpit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.cockpit-fields label{min-width:0}
+.cockpit-fields .field{margin:8px 0}
+.cockpit-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 15px}
+.cockpit-checks .check{margin:9px 0}
+#propertyMap{width:100%;height:min(54vh,490px);min-height:330px;border:1px solid #2a465e;border-radius:14px;background:#183448;margin:16px 0 20px;z-index:0;color:#d8e8f5;padding:0}
+#propertyMap .leaflet-popup-content{color:#1b3042}
+#propertyMap .leaflet-popup-content a{color:#117a67;text-decoration:underline}
+.price-chart{width:100%;max-height:230px;display:block;background:#0c1a2c;border-radius:12px;border:1px solid #293d55}
+.cockpit-table-wrap{max-width:100%;overflow-x:auto;margin-top:14px}
+.cockpit-table{width:100%;border-collapse:collapse;font-size:13px}
+.cockpit-table th,.cockpit-table td{padding:10px 12px;text-align:left;border-bottom:1px solid #304259}
+.cockpit-table th{color:#9fb8cf;font-weight:700}
+#overviewView .button,#mapView .button,#renoplanView .button,#profilesView .button,#dossierView .button{display:inline-flex;align-items:center;justify-content:center}
+.tabs{margin-bottom:17px}
+.tab:focus-visible,.button:focus-visible,a:focus-visible{outline:2px solid #72f2d1;outline-offset:2px}
+@media(max-width:1150px){.cockpit-kpis{grid-template-columns:repeat(2,1fr)}.cockpit-columns{grid-template-columns:1fr}}
+@media(max-width:600px){.cockpit-box{padding:15px}.cockpit-fields,.cockpit-checks{grid-template-columns:1fr}.cockpit-result{gap:8px}.cockpit-result-right{max-width:115px}.cockpit-kpis{gap:8px}.cockpit-kpis>div{padding:12px}#propertyMap{min-height:300px}}
