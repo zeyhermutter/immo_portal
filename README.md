@@ -13,6 +13,32 @@ Statisches Recherchewerkzeug für **85622 Feldkirchen bei München (100 km)**. E
 - Suchprofile, lokale Preisänderungshinweise, Objektakten mit Notizen und Besichtigungs-Checklisten.
 - Analyse-CSV-Export.
 
+## Reale Fundstellen aus amtlicher Primärquelle (Stand 17.10.2026)
+
+Im neuen Tab **Reale Fundstellen** sind drei konkrete veröffentlichte Verkäufe des Freistaats Bayern als **redaktionell geprüfte Originalverweise** hinterlegt. Sie sind keine automatisch heruntergeladenen oder neu veröffentlichten Exposés und kein Beleg für "unter Marktwert". Frist laut Quelle jeweils **22.11.2026**; nach Ablauf der Frist wird die Übernahmefunktion ausgegraut. Status und Angebotsfrist bitte auf der Originalseite erneut prüfen.
+
+| Originalquelle | Amtliche Preisvorstellung | Wohnfläche laut Quelle |
+|---|---:|---:|
+| [Lechelstraße 10a, 80997 München](https://immobilien.bayern.de/immobilien/verkaeufe/rv1/grundstueck-mit-altbestand-lechelstrasse-10a/index.html) | 990.000 € | ca. 135 m² |
+| [Weidmannstraße 48, 80997 München](https://immobilien.bayern.de/immobilien/verkaeufe/rv1/grundstueck-mit-altbestand-in-80997-muenchen-weidmannstrasse-48/index.html) | 2.450.000 € | ca. 215 m² |
+| [Waldhornstraße 18, 80997 München](https://www.immobilien.bayern.de/immobilien/verkaeufe/rv1/grundstueck-mit-altbestand-in-80997-muenchen-waldhornstrasse-18/index.html) | 3.740.000 € | ca. 200 m² |
+
+Die Links sind in data/research-links.json gespeichert. Nur kurze eigene Quellenhinweise und grundlegende Fakten, keine Exposébilder oder massenhaft vervielfältigten Beschreibungen. Vor jeder Entscheidung Originalseite und Rechtslage prüfen. In der Rechercheansicht gibt es "Zur eigenen Prüfung übernehmen": Dies kopiert auf **bewussten Klick** den öffentlich genannten Preis als Ausgangswert ins browserlokale Cockpit; **der Marktwert wird ausdrücklich auf 0 gesetzt und kein Gewinn behauptet**. Beim späteren Speichern werden eigene Marktwert- und Sanierungseingaben erhalten.
+
+### Praxisprüfung der Rechnung
+
+Die Preisvorstellung für Lechelstraße 10a beträgt laut Primärquelle 990.000 €. Um die Rechnung zu testen, wurden **frei angenommene, nicht verifizierte** Werte von 140.000 € Renovierung, 10 % Nebenkosten und 1.400.000 € Marktwert verwendet. Formel: 990.000 € + 99.000 € + 140.000 € = 1.229.000 € Gesamtkosten. 1.400.000 € − 1.229.000 € = 171.000 € rechnerische Differenz (12,21 % des angenommenen Marktwerts). **Diese Szenariowerte sind keine Wertermittlung und keine Anlageempfehlung.** Ohne tatsächliche Wertermittlung gibt es keinen belastbaren Schnäppchenbefund.
+
+Regressionsprüfung: node tests/market-check.mjs.
+
+### Echtdatenimport von kooperierenden Maklern (OpenImmo XML)
+
+Die Rechercheansicht akzeptiert OpenImmo-XML-Dateien (maximal 5 MB / 1000 Objekte), die ein Immobilienanbieter **mit Verarbeitungserlaubnis** übermittelt. Die Datei wird ausschließlich lokal im Browser gelesen (kein Upload, kein Scraping). Kaufinserate ohne gültige Original-URL oder Preis werden nicht übernommen. Wenn ein bestätigtes URL-Schema vorliegt, kann optional eine Anbieter-Basis-URL mit der externen Objektnummer kombiniert werden. Ansonsten diese Eingabe leer lassen. Bestehende Objekte werden anhand der Original-URL zusammengeführt; Favoriten und eigene Marktwert-/Renovierungsannahmen bleiben erhalten.
+
+OpenImmo ist ein **XML-Datenstandard, keine Sammlung frei verwendbarer Inserate**. Seine Dokumentation erlaubt die Nutzung der Struktur, ersetzt aber **nicht** die Freigabe durch den jeweiligen Dateninhaber: https://www.openimmo.de/go.php/p/12/cm_prinzip.htm und https://www.openimmo.de/go.php/p/24/download.htm.
+
+Für unbeaufsichtigte regelmäßige Dateneingänge bleibt der bereits implementierte JSON-Feedweg über eine **explizit autorisierte Quelle** verfügbar.
+
 ## Modellbewertung
 
 Der Deal-Score (0–100) wird **nur** vergeben, wenn ein Kaufpreis und ein geschätzter Marktwert angegeben sind. Formel: 50 + 2 × modellierter Abschlag in Prozentpunkten + 5 für Koordinaten im 100-km-Kreis + 5 für vorhandene Fläche/Beschreibung + 5 für dokumentierte Preisreduzierung; begrenzt auf 0–100. Modellierter Abschlag: (Marktwert − [Kaufpreis + Kaufnebenkosten + Sanierung]) / Marktwert. Ein höherer Score ist kein Nachweis eines unter Marktwert liegenden Angebots. Sanierungsschätzungen, Marktwerte und Risiken müssen fachlich geprüft werden.
@@ -95,6 +121,8 @@ scripts/sync-feeds.mjs             Kontrollierter JSON-Import
 ~~~sh
 node --check cockpit.js
 node --check scripts/sync-feeds.mjs
+node --check research.js
+node tests/market-check.mjs
 node scripts/sync-feeds.mjs --check
 python3 -m http.server 8000
 ~~~
