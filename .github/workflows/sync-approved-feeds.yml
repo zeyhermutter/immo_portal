@@ -1,0 +1,37 @@
+name: Import explicitly approved property feeds
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '37 5 * * *' # daily, UTC; GitHub scheduling is best effort
+permissions:
+  contents: write
+concurrency:
+  group: immoradar-feed-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate and import only permitted JSON feeds
+        run: |
+          node --check scripts/sync-feeds.mjs
+          node scripts/sync-feeds.mjs --check
+          node scripts/sync-feeds.mjs
+      - name: Commit updated public data only when changed
+        run: |
+          git add data/listings.json
+          if git diff --cached --quiet; then
+            echo "No data changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update licensed property feed data"
+          git push
