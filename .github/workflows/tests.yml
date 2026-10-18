@@ -1,8 +1,7 @@
 name: ImmoRadar checks
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -18,15 +17,18 @@ jobs:
           node-version: '22'
       - name: Check scripts and tests
         run: |
+          node --check app-core.js
+          node --check dashboard.js
+          node --check eml-dashboard.js
+          node --check public-listings.js
+          node --check email-parser.js
+          node --check email-alerts.js
           node --check cockpit.js
           node --check research.js
           node --check portal-access.js
           node --check saved-search.js
-          node --check email-parser.js
-          node --check email-alerts.js
           node --check scripts/sync-feeds.mjs
-          node --check tests/email-parser.test.mjs
-          node --check tests/market-check.mjs
           node tests/email-parser.test.mjs
+          node tests/app-core.test.mjs
           node tests/market-check.mjs
           node scripts/sync-feeds.mjs --check
