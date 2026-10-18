@@ -1,14 +1,18 @@
-/* Public, privacy-safe listing snapshot derived only from property alert facts. No Gmail IDs, search IDs or tracking data. */
-(()=>{'use strict';
-const listings=[
-{portal:'ImmoScout24',title:'Teilweise vermietetes Dreifamilienhaus auf sonnigem Westgrundstück in absolut ruhiger Lage',price:1250000,livingArea:183,rooms:6.5,landArea:629,location:'Gartenstadt Trudering, München',url:'https://www.immobilienscout24.de/expose/159101205',date:'2026-10-18'},
-{portal:'ImmoScout24',title:'NEUBAU: Edles Stadthaus mit 4,5 Zimmern im schönen Obermenzing',price:1690000,livingArea:163,rooms:4.5,landArea:105,location:'Obermenzing, München',url:'https://www.immobilienscout24.de/expose/162016931',date:'2026-10-18'},
-{portal:'ImmoScout24',title:'HAUS REGINBALD / Bestlage Obermenzing',price:null,livingArea:340,rooms:10,landArea:881,location:'Obermenzing, München',url:'https://www.immobilienscout24.de/expose/171440343',date:'2026-10-18'}
-];
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=v=>Number.isFinite(v)?v.toLocaleString('de-DE')+' €':'Preis auf Anfrage';
-function card(o){const sqm=Number.isFinite(o.price)&&o.livingArea?Math.round(o.price/o.livingArea).toLocaleString('de-DE')+' €/m²':'€/m² nicht berechenbar';return '<article class="card"><div class="meta"><span class="tag good">'+esc(o.portal)+'</span><span class="tag">Benachrichtigung '+esc(new Date(o.date).toLocaleDateString('de-DE'))+'</span></div><h3>'+esc(o.title)+'</h3><p class="description">'+esc(o.location)+' · '+esc(o.livingArea)+' m² Wohnfläche · '+esc(o.rooms)+' Zimmer · '+esc(o.landArea)+' m² Grundstück</p><div class="price">'+esc(money(o.price))+'</div><div class="row"><span class="small">'+esc(sqm)+' · Verfügbarkeit im Original prüfen</span><a class="button secondary" href="'+esc(o.url)+'" target="_blank" rel="noopener noreferrer">Exposé ↗</a></div></article>'}
-function render(){const host=document.getElementById('sourcesView');if(!host||document.getElementById('publicListings'))return;const section=document.createElement('section');section.id='publicListings';section.innerHTML='<div class="section-head" style="margin-top:24px"><div><div class="eyebrow">Aktuelle Objekte</div><h2 style="margin-top:7px">Immobilien aus den Suchbenachrichtigungen</h2><p class="muted" style="margin:7px 0 0">Hier stehen jetzt konkrete Angebote statt nur Suchlinks. Angezeigt werden ausschließlich immobilienbezogene Fakten; keine privaten Mail- oder Trackingdaten. Die Verfügbarkeit wurde nicht live geprüft.</p></div><span class="pill">'+listings.length+' Objekte</span></div><div class="cards">'+listings.map(card).join('')+'</div>';host.prepend(section)}
-window.ImmoRadarPublicListings=Object.freeze(listings.map(x=>Object.freeze({...x})));
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render);else render();
-})();
+/* Privacy-safe property facts from observed alerts. No Gmail IDs, addresses, search IDs or tracking tokens. */
+(()=>{'use strict';const d='2026-10-18',p='ImmoScout24',u=id=>'https://www.immobilienscout24.de/expose/'+id;const listings=[
+{portal:p,title:'Teilweise vermietetes Dreifamilienhaus auf sonnigem Westgrundstück in absolut ruhiger Lage',price:1250000,livingArea:183,rooms:6.5,landArea:629,location:'Gartenstadt Trudering, München',url:u('159101205'),date:d,sourceRadiusKm:50},
+{portal:p,title:'NEUBAU: Edles Stadthaus mit 4,5 Zimmern im schönen Obermenzing',price:1690000,livingArea:163,rooms:4.5,landArea:105,location:'Obermenzing, München',url:u('162016931'),date:d,sourceRadiusKm:50},
+{portal:p,title:'HAUS REGINBALD / Bestlage Obermenzing',price:null,livingArea:340,rooms:10,landArea:881,location:'Obermenzing, München',url:u('171440343'),date:d,sourceRadiusKm:50},
+{portal:p,title:'GROSSZÜGIGE NEUBAU-VILLA IN BESTER LAGE VON GRÜNWALD',price:4290000,livingArea:291,rooms:10,landArea:650,location:'Grünwald',url:u('171143290'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Exklusiver Reihenendbungalow, mit allen Annehmlichkeiten, auf uneinsehbarem Grundstück',price:2250000,livingArea:235,rooms:7,landArea:924,location:'Grünwald',url:u('171848372'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Direkt vom Eigentümer: Luxussanierte Altbauvilla in Sollner Bestlage!',price:1695000,livingArea:124.03,rooms:4,landArea:350,location:'Solln, München',url:u('148660478'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Familien-Doppelhaus vor den Toren Münchens',price:1114900,livingArea:146.46,rooms:5,landArea:172,location:'Oberschleißheim',url:u('170138602'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Neubau-Haus in Taufkirchen',price:1499000,livingArea:145.22,rooms:5,landArea:268,location:'Taufkirchen',url:u('170434877'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Haus in Taufkirchen',price:1314000,livingArea:127.32,rooms:4,landArea:116,location:'Taufkirchen',url:u('169517830'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Rothschwaige: Familienidyll nahe Karlsfelder See | Neubau-DHH (EEK A+) | Provisionsfrei',price:1049000,livingArea:154,rooms:4,landArea:378,location:'Karlsfeld',url:u('171825675'),date:'2026-10-17',sourceRadiusKm:50,renovationHints:['provisionsfrei']},
+{portal:p,title:'Haus in Waldtrudering',price:999900,livingArea:140.04,rooms:5,landArea:226.09,location:'Waldtrudering, München',url:u('169459316'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Villa im Herzogpark',price:13850000,livingArea:504,rooms:7,landArea:870,location:'Herzogpark, München',url:u('171162989'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Haus in Alt-Moosach',price:999900,livingArea:111.6,rooms:5,landArea:94,location:'Alt-Moosach, München',url:u('164521582'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Haus in Haar',price:1375000,livingArea:141.78,rooms:5,landArea:320,location:'Haar',url:u('169284486'),date:'2026-10-17',sourceRadiusKm:50},
+{portal:p,title:'Haus in Haar',price:1104000,livingArea:138.05,rooms:5,landArea:204,location:'Haar',url:u('169284484'),date:'2026-10-17',sourceRadiusKm:50}
+];window.ImmoRadarPublicListings=Object.freeze(listings.map(x=>Object.freeze(x)));})();
