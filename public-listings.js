@@ -1,0 +1,14 @@
+/* Public, privacy-safe listing snapshot derived only from property alert facts. No Gmail IDs, search IDs or tracking data. */
+(()=>{'use strict';
+const listings=[
+{portal:'ImmoScout24',title:'Teilweise vermietetes Dreifamilienhaus auf sonnigem Westgrundstück in absolut ruhiger Lage',price:1250000,livingArea:183,rooms:6.5,landArea:629,location:'Gartenstadt Trudering, München',url:'https://www.immobilienscout24.de/expose/159101205',date:'2026-10-18'},
+{portal:'ImmoScout24',title:'NEUBAU: Edles Stadthaus mit 4,5 Zimmern im schönen Obermenzing',price:1690000,livingArea:163,rooms:4.5,landArea:105,location:'Obermenzing, München',url:'https://www.immobilienscout24.de/expose/162016931',date:'2026-10-18'},
+{portal:'ImmoScout24',title:'HAUS REGINBALD / Bestlage Obermenzing',price:null,livingArea:340,rooms:10,landArea:881,location:'Obermenzing, München',url:'https://www.immobilienscout24.de/expose/171440343',date:'2026-10-18'}
+];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>Number.isFinite(v)?v.toLocaleString('de-DE')+' €':'Preis auf Anfrage';
+function card(o){const sqm=Number.isFinite(o.price)&&o.livingArea?Math.round(o.price/o.livingArea).toLocaleString('de-DE')+' €/m²':'€/m² nicht berechenbar';return '<article class="card"><div class="meta"><span class="tag good">'+esc(o.portal)+'</span><span class="tag">Benachrichtigung '+esc(new Date(o.date).toLocaleDateString('de-DE'))+'</span></div><h3>'+esc(o.title)+'</h3><p class="description">'+esc(o.location)+' · '+esc(o.livingArea)+' m² Wohnfläche · '+esc(o.rooms)+' Zimmer · '+esc(o.landArea)+' m² Grundstück</p><div class="price">'+esc(money(o.price))+'</div><div class="row"><span class="small">'+esc(sqm)+' · Verfügbarkeit im Original prüfen</span><a class="button secondary" href="'+esc(o.url)+'" target="_blank" rel="noopener noreferrer">Exposé ↗</a></div></article>'}
+function render(){const host=document.getElementById('sourcesView');if(!host||document.getElementById('publicListings'))return;const section=document.createElement('section');section.id='publicListings';section.innerHTML='<div class="section-head" style="margin-top:24px"><div><div class="eyebrow">Aktuelle Objekte</div><h2 style="margin-top:7px">Immobilien aus den Suchbenachrichtigungen</h2><p class="muted" style="margin:7px 0 0">Hier stehen jetzt konkrete Angebote statt nur Suchlinks. Angezeigt werden ausschließlich immobilienbezogene Fakten; keine privaten Mail- oder Trackingdaten. Die Verfügbarkeit wurde nicht live geprüft.</p></div><span class="pill">'+listings.length+' Objekte</span></div><div class="cards">'+listings.map(card).join('')+'</div>';host.prepend(section)}
+window.ImmoRadarPublicListings=Object.freeze(listings.map(x=>Object.freeze({...x})));
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render);else render();
+})();
