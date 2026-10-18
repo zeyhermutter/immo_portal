@@ -18,6 +18,7 @@ jobs:
       - name: Check scripts and tests
         run: |
           node --check app-core.js
+          node --check snapshot-core.js
           node --check dashboard.js
           node --check eml-dashboard.js
           node --check public-listings.js
@@ -30,5 +31,6 @@ jobs:
           node --check scripts/sync-feeds.mjs
           node tests/email-parser.test.mjs
           node tests/app-core.test.mjs
+          node tests/snapshot-core.test.mjs
           node tests/market-check.mjs
           node scripts/sync-feeds.mjs --check
