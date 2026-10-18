@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import vm from 'node:vm';
+const source=await readFile(new URL('../snapshot-core.js',import.meta.url),'utf8'),box={URL};vm.runInNewContext(source,box);const S=box.ImmoRadarSnapshots;assert.ok(S);
+const a={portal:'ImmoScout24',url:'https://www.immobilienscout24.de/expose/123?tracking=x',title:'Haus',propertyType:'house',price:899000};
+const first=S.merge(null,a,'2026-10-18T08:00:00Z');assert.equal(first.id,'immoscout24:123');assert.equal(first.firstSeen,'2026-10-18T08:00:00Z');assert.equal(first.priceHistory.length,1);
+const same=S.merge(first,{...a,url:'https://www.immobilienscout24.de/expose/123',price:899000},'2026-10-19T08:00:00Z');assert.equal(same.firstSeen,first.firstSeen);assert.equal(same.lastSeen,'2026-10-19T08:00:00Z');assert.equal(same.priceHistory.length,1);
+const drop=S.merge(same,{...a,price:849000},'2026-10-20T08:00:00Z');assert.equal(drop.priceHistory.length,2);assert.equal(drop.priceHistory[1].price,849000);
+assert.equal(S.mergeAll([],[a,{...a,url:'https://www.immobilienscout24.de/expose/123?foo=bar'}],'2026-10-18T08:00:00Z').length,1);
+assert.deepEqual(Array.from(S.renovationSignals({title:'Unsaniertes Handwerkerobjekt mit älterer Heizung'})),['unsaniert','Handwerkerobjekt','ältere Heizung']);
+assert.equal(S.status({lastSeen:'2026-10-18T08:00:00Z'},Date.parse('2026-10-19T08:00:00Z')),'new');assert.equal(S.status({lastSeen:'2026-09-01T08:00:00Z'},Date.parse('2026-10-19T08:00:00Z')),'stale');assert.equal(S.status({observationStatus:'not-verifiable'}),'not-verifiable');
+console.log('PASS: snapshot identity, dedupe, history, renovation signals and status');
