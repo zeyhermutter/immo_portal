@@ -24,5 +24,7 @@
 {propertyType:A,portal:p,title:'Zentrumsnah & bezugsfrei: 4-Zimmer-Wohnung mit Westbalkon und Stellplatz in Erding',price:349000,livingArea:73.58,rooms:4,location:'Erding, Erding (Kreis)',url:u('171908984'),date:d,sourceRadiusKm:50},
 {propertyType:A,portal:p,title:'4-Zimmer Wohnung mit großzügiger Terrasse',price:265000,livingArea:104,rooms:4,location:'Taufkirchen (Vils), Erding (Kreis)',url:u('171908764'),date:d,sourceRadiusKm:50},
 {propertyType:A,portal:p,title:'3-Zimmer-Wohnung in Wolfratshausen',price:298000,livingArea:72,rooms:3,location:'Wolfratshausen, Bad Tölz-Wolfratshausen (Kreis)',url:u('171907905'),date:d,sourceRadiusKm:50},
-{propertyType:A,portal:p,title:'Kleines Apartment mit großer Dachterrasse',price:298000,livingArea:50,rooms:1,location:'Balanstraße-West, München',url:u('171906137'),date:d,sourceRadiusKm:50}
+{propertyType:A,portal:p,title:'Kleines Apartment mit großer Dachterrasse',price:298000,livingArea:50,rooms:1,location:'Balanstraße-West, München',url:u('171906137'),date:d,sourceRadiusKm:50},
+{propertyType:A,portal:p,title:'Ab sofort bezugsfrei: Charmantes 1-Zimmer-Appartement mit Balkon und TG-Stellplatz in Markt Schwaben',price:154900,livingArea:32,rooms:1,location:'Markt Schwaben, Ebersberg (Kreis)',url:u('171913166'),date:'2026-10-20',sourceRadiusKm:50},
+{propertyType:A,portal:p,title:'Helle 2-Zimmer-Dachgeschosswohnung mit Eichenparkett in München-Milbertshofen',price:352000,livingArea:46.7,rooms:2,location:'Milbertshofen, München',url:u('171912616'),date:'2026-10-20',sourceRadiusKm:50}
 ].map(Object.freeze));})();
