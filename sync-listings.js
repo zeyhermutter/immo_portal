@@ -1,5 +1,5 @@
 /* Privacy-safe observations from latest ImmoScout24 email alerts. */
-(()=>{'use strict';const H='house',p='ImmoScout24',u=id=>'https://www.immobilienscout24.de/expose/'+id,d='2026-10-19';window.ImmoRadarSyncListings=Object.freeze([
+(()=>{'use strict';const H='house',A='apartment',p='ImmoScout24',u=id=>'https://www.immobilienscout24.de/expose/'+id,d='2026-10-19';window.ImmoRadarSyncListings=Object.freeze([
 {propertyType:H,portal:p,title:'Rosenheim-Pösling: 4-Zimmer-Neubau-DHH mit ca. 490 m² Grundstück - schlüsselfertig',price:759900,livingArea:107,rooms:4,landArea:490,location:'Pang, Rosenheim',url:u('171899182'),date:d,sourceRadiusKm:50},
 {propertyType:H,portal:p,title:'Charmante Doppelhaushälfte mit Garten in ruhiger Lage von München-Allach',price:719000,livingArea:136.32,rooms:3,landArea:350,location:'Untermenzing, München',url:u('171898701'),date:d,sourceRadiusKm:50},
 {propertyType:H,portal:p,title:'Charmantes Häuschen auf großem Grund mit sonnigem Westgarten!',price:472500,livingArea:95.53,rooms:5,landArea:1006,location:'Adelshofen, Fürstenfeldbruck (Kreis)',url:u('171898586'),date:d,sourceRadiusKm:50},
@@ -16,5 +16,13 @@
 {propertyType:H,portal:p,title:'Ein Stück Münchner Geschichte! Repräsentative Denkmal-Stadtvilla',price:4090000,livingArea:543.69,rooms:16,landArea:832,location:'Thalkirchen, München',url:u('171906151'),date:d,sourceRadiusKm:50},
 {propertyType:H,portal:p,title:'Reihenhaus in Dachau, 5 Zimmer - Ihre Chance ohne Maklerprovision!',price:930000,livingArea:133,rooms:5,landArea:211,location:'Giesing, München',url:u('171905647'),date:d,sourceRadiusKm:50,renovationHints:['provisionsfrei']},
 {propertyType:H,portal:p,title:'Stilvolles Anwesen mit Wintergarten, Wellnessbereich und Gartenidylle | Verkauf mit Nießbrauch',price:749000,livingArea:272,rooms:6,landArea:654,location:'Wörth, Erding (Kreis)',url:u('171903435'),date:d,sourceRadiusKm:50},
-{propertyType:H,portal:p,title:'Vermietetes Reihenmittelhaus schön gelegen in München-Haar',price:739000,livingArea:115,rooms:5,landArea:148,location:'Haar, München (Kreis)',url:u('164596410'),date:d,sourceRadiusKm:50}
+{propertyType:H,portal:p,title:'Vermietetes Reihenmittelhaus schön gelegen in München-Haar',price:739000,livingArea:115,rooms:5,landArea:148,location:'Haar, München (Kreis)',url:u('164596410'),date:d,sourceRadiusKm:50},
+{propertyType:H,portal:p,title:'Doppelhaushälfte mit Garten, zwei Terrassen und Garage in Jetzendorf zu verkaufen!',price:698000,livingArea:145,rooms:4,landArea:370,location:'Jetzendorf, Pfaffenhofen an der Ilm (Kreis)',url:u('171909317'),date:d,sourceRadiusKm:50},
+{propertyType:H,portal:p,title:'Zentrales ECHING / Reiheneckhaus / Fix & Flip / DG-Ausbau möglich / Anbau / UG Ausbau',price:795000,livingArea:130,rooms:5,landArea:420,location:'Eching, Freising (Kreis)',url:u('171908019'),date:d,sourceRadiusKm:50},
+{propertyType:H,portal:p,title:'München - Zweifamilienhaus in ruhiger aber zentraler Lage',price:978000,livingArea:120,rooms:6,landArea:658,location:'Altaubing, München',url:u('171907884'),date:d,sourceRadiusKm:50},
+{propertyType:A,portal:p,title:'Mit dem Aufzug direkt in das sonnige Penthouse mit 111 qm Dachterrasse',price:1100000,livingArea:123,rooms:3,location:'Obermenzing, München',url:u('171908565'),date:d,sourceRadiusKm:50},
+{propertyType:A,portal:p,title:'Zentrumsnah & bezugsfrei: 4-Zimmer-Wohnung mit Westbalkon und Stellplatz in Erding',price:349000,livingArea:73.58,rooms:4,location:'Erding, Erding (Kreis)',url:u('171908984'),date:d,sourceRadiusKm:50},
+{propertyType:A,portal:p,title:'4-Zimmer Wohnung mit großzügiger Terrasse',price:265000,livingArea:104,rooms:4,location:'Taufkirchen (Vils), Erding (Kreis)',url:u('171908764'),date:d,sourceRadiusKm:50},
+{propertyType:A,portal:p,title:'3-Zimmer-Wohnung in Wolfratshausen',price:298000,livingArea:72,rooms:3,location:'Wolfratshausen, Bad Tölz-Wolfratshausen (Kreis)',url:u('171907905'),date:d,sourceRadiusKm:50},
+{propertyType:A,portal:p,title:'Kleines Apartment mit großer Dachterrasse',price:298000,livingArea:50,rooms:1,location:'Balanstraße-West, München',url:u('171906137'),date:d,sourceRadiusKm:50}
 ].map(Object.freeze));})();
