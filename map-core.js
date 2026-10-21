@@ -154,5 +154,18 @@ function spiderOffsets(count){
   return out;
 }
 
-root.ImmoRadarMapCore=Object.freeze({searchCenter,radiusKm,point,located,placeKey,locality,grouping,pins,clusters,spiderOffsets});
+/* Web Mercator EPSG:3857: every tile and every pin uses the same world-pixel projection. */
+const MAX_LAT=85.05112878;
+function project(lat,lon,zoom){
+  const latitude=Math.max(-MAX_LAT,Math.min(MAX_LAT,Number(lat)));
+  const lambda=Number(lon);
+  const size=256*2**zoom;
+  const phi=latitude*Math.PI/180;
+  return {x:(lambda+180)/360*size,y:(1-Math.asinh(Math.tan(phi))/Math.PI)/2*size};
+}
+function unproject(x,y,zoom){
+  const size=256*2**zoom;
+  return {lat:Math.atan(Math.sinh(Math.PI*(1-2*y/size)))*180/Math.PI,lon:x/size*360-180};
+}
+root.ImmoRadarMapCore=Object.freeze({searchCenter,radiusKm,point,located,placeKey,locality,grouping,pins,clusters,spiderOffsets,project,unproject});
 })(globalThis);
