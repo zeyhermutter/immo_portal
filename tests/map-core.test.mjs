@@ -92,7 +92,7 @@ assert.match(page,/id="mapAreaGroups"/,'Locality list is the no-map alternative'
 assert.match(page,/id="unlocatedZone"/,'Unknown locations have a separate non-geographic map overlay');
 assert.match(page,/id="unlocatedToggle"/,'Unknown-location cluster can be opened');
 assert.match(page,/id="unlocatedList"/,'Unknown-location cluster displays all members');
-assert.match(page,/src="\.\/map-view\.js"/);
+assert.match(page,/src="\.\/map-view\.js\?v=20261021-mapfix"/);
 const view=await readFile(new URL('../map-view.js',import.meta.url),'utf8');
 assert.match(view,/tiles\.on\('tileload'/,'Interactive map may replace fallback only on successful tile');
 assert.match(view,/if\(frame\)\{frame\.hidden=true/,'Fallback must be hidden as soon as Leaflet owns the coordinates');
