@@ -99,18 +99,18 @@ assert.match(view,/if\(frame\)\{frame\.hidden=true/,'Fallback must be hidden as 
 assert.match(view,/drawGroups\(data\)/,'Accessible listings must update with filters');
 assert.match(view,/drawSpider\(group,center,key\)/,'Cluster click spiders all members');
 assert.match(view,/root\.L\.polyline\(\[latLng,tip\]/,'Spider legs rendered as lines');
-assert.match(view,/tiles\.on\('tileload'/,'Fallback hides only after successful OSM tile');
-assert.match(page,/id="mapFallbackPins"/,'Always-visible fallback pins exist above the embed');
+assert.match(view,/tiles\.on\('tileload'/,'Tiles load independently in Leaflet and not inside a second iframe');
+assert.match(page,/id="mapFallbackPins"/,'Legacy overlay node exists but must remain hidden without Leaflet');
 assert.match(view,/details\.addEventListener\('toggle'/,'Opening a locality group activates map focus');
 assert.match(view,/map\.flyTo\(\[c\.lat,c\.lon\],zoom/,'Locality group selection zooms interactive map');
 assert.match(view,/focusFallback\(c\.lat,c\.lon\)/,'Locality selection also zooms fallback map');
 assert.match(view,/el\.style\.visibility='visible'/,'Leaflet pins become visible without waiting for tiles');
-assert.match(view,/drawFallback\(\)/,'Non-Leaflet fallback displays geographic listing pins');
+assert.match(view,/function drawFallback\(\)[\s\S]*?overlay\.hidden=true/,'Iframe fallback must hide its unaligned pin overlay');
 assert.match(view,/root\.L\.polyline\(\[latLng,tip\]/,'Spider legs still connect individual listing pins');
 const stylesheet=await readFile(new URL('../dashboard.css',import.meta.url),'utf8');
 assert.match(stylesheet,/\.map-interactive\.leaflet-container\{background:#edf0ea!important\}/,
   'Leaflet owns the basemap rather than leaving a transparent iframe underneath');
-assert.match(stylesheet,/\.map-fallback-pin\{/,'Fallback pins should have a visible style');
+assert.match(stylesheet,/\.leaflet-pane,\.leaflet-layer,\.leaflet-image-layer/,'Leaflet map tiles and markers use positioned native layers');
 
 assert.match(stylesheet,/\.map-interactive \.leaflet-tile-pane\{visibility:visible!important\}/,
   'Map tiles must remain visible and synchronized with pins');
@@ -122,4 +122,19 @@ assert.doesNotMatch(view,/map\.on\('moveend',[\s\S]*?updateFrame\(\)/,
   'Leaflet may not pan a second independent map as its basemap');
 assert.match(page,/id="mapFallbackNotice"/,
   'Fallback has a clear explanation that pan is disabled');
-console.log('PASS: map positions stay attached to the basemap, filter logic and spider groups');
+
+const moosach=M.locality({location:'Alt-Moosach, München'});
+const milbertshofen=M.locality({location:'Milbertshofen, München'});
+assert.ok(moosach&&milbertshofen);
+assert.equal(moosach.key,'Alt-Moosach');
+assert.equal(milbertshofen.key,'Milbertshofen');
+assert.ok(moosach.lon>11.49&&moosach.lon<11.54,'Moosach longitude near Munich, not Fürstenfeldbruck');
+assert.ok(milbertshofen.lon>11.55&&milbertshofen.lon<11.60);
+const between=C.distanceKm(moosach,milbertshofen);
+assert.ok(between>3&&between<7,'Moosach and Milbertshofen are only a few km apart');
+const leafletBackup=await readFile(new URL('../map-leaflet-backup.js',import.meta.url),'utf8');
+assert.match(page,/map-leaflet-backup\.js/,'Alternative Leaflet loader must be included');
+assert.match(leafletBackup,/root\.ImmoRadarMap\?\.init\(\)/,'Successful backup should activate real Leaflet map');
+assert.doesNotMatch(view,/function fallbackPoint\(/,'Never project geographic pins onto a cross-origin iframe bbox');
+assert.match(view,/const overlay=\$\('mapFallbackPins'\)/,'Fallback overlay must be addressed');
+console.log('PASS: Moosach projection, native Leaflet map, backed-up CDN, no inaccurate iframe pins');
