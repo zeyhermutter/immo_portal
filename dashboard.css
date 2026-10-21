@@ -132,3 +132,14 @@
 .map-area-group>summary:focus-visible{outline:2px solid #176044;outline-offset:-2px}
 .map-area-group>summary:hover{background:#eef8ee}
 @media(max-width:600px){.map-fallback-pin{width:28px;height:28px}.map-fallback-cluster{width:36px;height:36px}}
+
+/* Coordinate integrity: ONE interactive map for tiles and pins.
+   Historic transparent iframe overlay allowed the basemap and pins to drift. */
+.map-interactive.leaflet-container{background:#edf0ea!important}
+.map-interactive .leaflet-tile-pane{visibility:visible!important}
+.map-fallback-frame{pointer-events:none}
+.map-map-warning{position:absolute;z-index:1051;left:50%;top:12px;transform:translateX(-50%);border-radius:8px;background:#fff7e9;border:1px solid #d8ac5d;padding:8px 12px;color:#5b472d;font-size:12px;max-width:calc(100% - 270px);box-shadow:0 2px 9px #0002}
+.map-map-warning[hidden],.map-fallback-notice[hidden]{display:none}
+.map-fallback-notice{margin:8px 4px 0;color:#6a5a43;font-size:12px}
+.map-fallback-notice a{color:#176044;text-decoration:underline}
+@media(max-width:700px){.map-map-warning{max-width:calc(100% - 24px);top:auto;bottom:48px;left:12px;transform:none}}
