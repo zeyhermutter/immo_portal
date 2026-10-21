@@ -1,277 +1,339 @@
-/* ImmoRadar property map: visible pins, locality focus, clustering + spiderfy.
- * Unlocated apartment drawer is non-geographic. Any locality position is APPROXIMATE.
- * Leaflet tiles and markers share ONE map transform; static iframe is used only when Leaflet is unavailable.
+/* ImmoRadar map: dependency-free Web Mercator (EPSG:3857).
+ * OpenStreetMap raster tiles and real/approximate listing pins use exactly
+ * the same pixel projection during zoom, drag and resize. No iframe overlay.
  */
 (function(root){'use strict';
-const D=root.ImmoRadarMapCore,$=id=>document.getElementById(id);
-let map=null,groupLayer=null,spiderLayer=null,circle=null,rows=[],tilesReady=false,expandedKey=null;
-const initialBounds={west:10.35,south:47.23,east:13.11,north:49.07};
-let fallbackBounds={...initialBounds};
-function node(tag,value,cls){
+const D=root.ImmoRadarMapCore;
+const $=id=>document.getElementById(id);
+const LIMIT={minZoom:6,maxZoom:17};
+const initial={lat:D.searchCenter.lat,lon:D.searchCenter.lon,zoom:9};
+let state={...initial},rows=[],viewport=null,tiles=null,pinsLayer=null,legsLayer=null,landmarkLayer=null;
+let activeTiles=new Map(),expanded=null,drag=null,scheduled=false,tileErrors=0,tileSuccess=0;
+const landmarks=[
+  {name:'München',lat:48.13743,lon:11.57549},
+  {name:'Moosach',lat:48.179519,lon:11.512963},
+  {name:'Milbertshofen',lat:48.184,lon:11.573},
+  {name:'Fürstenfeldbruck',lat:48.1765,lon:11.2536},
+  {name:'Haar',lat:48.108807,lon:11.726532},
+  {name:'Rosenheim',lat:47.856366,lon:12.122469},
+  {name:'Feldkirchen',lat:48.14786,lon:11.72973}
+];
+const node=(tag,content,cls)=>{
   const el=document.createElement(tag);
-  if(value!==undefined)el.textContent=value;
+  if(content!==undefined)el.textContent=content;
   if(cls)el.className=cls;
   return el;
+};
+const svgNode=tag=>document.createElementNS('http://www.w3.org/2000/svg',tag);
+const type=o=>root.ImmoRadarCore?.type(o)||o?.propertyType;
+const openObject=o=>{if(o?.url&&root.ImmoRadarOpenDetail)root.ImmoRadarOpenDetail(o.url)};
+const worldSize=()=>256*2**state.zoom;
+function normalizeLongitude(lon){return (lon+180+360)%360-180}
+function worldCenter(){return D.project(state.lat,state.lon,state.zoom)}
+function size(){return {w:viewport?.clientWidth||800,h:viewport?.clientHeight||390}}
+function screenPoint(lat,lon){
+  const a=D.project(lat,lon,state.zoom),b=worldCenter(),{w,h}=size(),wrap=worldSize();
+  let dx=a.x-b.x;
+  if(dx>wrap/2)dx-=wrap;
+  if(dx<-wrap/2)dx+=wrap;
+  return {x:w/2+dx,y:h/2+a.y-b.y};
 }
-function openObject(o){if(o?.url&&typeof root.ImmoRadarOpenDetail==='function')root.ImmoRadarOpenDetail(o.url)}
-function analyzeButton(o){
-  const btn=node('button','Objekt analysieren','map-popup-action');
-  btn.type='button';btn.addEventListener('click',()=>openObject(o));return btn;
+function coordinateAt(x,y){
+  const b=worldCenter(),{w,h}=size();
+  const loc=D.unproject(b.x+x-w/2,b.y+y-h/2,state.zoom);
+  return {lat:loc.lat,lon:normalizeLongitude(loc.lon)};
 }
-function popup(o,approximate){
-  const wrap=node('div',undefined,'map-popup');
-  wrap.appendChild(node('strong',o.title||'Immobilienangebot'));
-  wrap.appendChild(node('div',o.location||'Ort unbekannt'));
-  wrap.appendChild(node('p',approximate?'Ungefährer Ortsmittelpunkt – KEINE Objektadresse.':'Koordinaten aus dem Datensatz – nicht zusätzlich geprüft.','map-popup-disclaimer'));
-  if(o.price!==null&&o.price!==undefined&&o.price!==''&&Number.isFinite(Number(o.price)))
-    wrap.appendChild(node('div',Number(o.price).toLocaleString('de-DE')+' €'));
+function button(text,cls,onClick,title){
+  const b=node('button',text,cls);
+  b.type='button';b.title=title||text;
+  b.addEventListener('pointerdown',e=>e.stopPropagation());
+  b.addEventListener('click',e=>{e.stopPropagation();onClick()});
+  return b;
+}
+function tileUri(tx,ty,zoom,alternative=false){
+  const range=2**zoom,wrapped=((tx%range)+range)%range;
+  return alternative
+    ?'https://basemaps.cartocdn.com/light_all/'+zoom+'/'+wrapped+'/'+ty+'.png'
+    :'https://tile.openstreetmap.org/'+zoom+'/'+wrapped+'/'+ty+'.png';
+}
+function warning(visible){
+  const el=$('mapTileNotice');if(!el)return;
+  el.hidden=!visible;
+  el.textContent='Kartenkacheln momentan nicht erreichbar. Die Pins bleiben korrekt geografisch berechnet; als Orientierung werden Ortsnamen eingeblendet.';
+  if(landmarkLayer)landmarkLayer.hidden=!visible;
+}
+function paintTiles(){
+  if(!tiles||!viewport)return;
+  const {w,h}=size(),center=worldCenter();
+  const baseX=center.x-w/2,baseY=center.y-h/2,n=2**state.zoom;
+  const firstX=Math.floor(baseX/256)-1,lastX=Math.floor((baseX+w)/256)+1;
+  const firstY=Math.max(0,Math.floor(baseY/256)-1),lastY=Math.min(n-1,Math.floor((baseY+h)/256)+1);
+  const requested=new Set();
+  for(let y=firstY;y<=lastY;y++)for(let x=firstX;x<=lastX;x++){
+    const key=state.zoom+'/'+x+'/'+y;
+    requested.add(key);
+    let image=activeTiles.get(key);
+    if(!image){
+      image=node('img');
+      image.alt='';image.draggable=false;
+      image.className='map-native-tile';
+      image.dataset.source='primary';
+      image.addEventListener('load',()=>{tileSuccess++;if(tileSuccess>0)warning(false)});
+      image.addEventListener('error',()=>{
+        if(image.dataset.source==='primary'){
+          image.dataset.source='secondary';
+          image.src=tileUri(x,y,state.zoom,true);
+        }else{
+          tileErrors++;
+          if(tileSuccess===0&&tileErrors>=3)warning(true);
+          image.style.visibility='hidden';
+        }
+      });
+      image.src=tileUri(x,y,state.zoom);
+      activeTiles.set(key,image);
+      tiles.appendChild(image);
+    }
+    image.style.left=Math.round(x*256-baseX)+'px';
+    image.style.top=Math.round(y*256-baseY)+'px';
+  }
+  for(const [key,element] of activeTiles){
+    if(!requested.has(key)){element.remove();activeTiles.delete(key)}
+  }
+}
+function paintLandmarks(){
+  if(!landmarkLayer)return;
+  landmarkLayer.replaceChildren();
+  const {w,h}=size();
+  for(const place of landmarks){
+    const p=screenPoint(place.lat,place.lon);
+    if(p.x<0||p.x>w||p.y<0||p.y>h)continue;
+    const name=node('span',place.name,'map-native-landmark');
+    name.style.left=p.x+'px';name.style.top=p.y+'px';
+    landmarkLayer.appendChild(name);
+  }
+}
+function showUnlocated(visible){
+  const btn=$('unlocatedToggle'),panel=$('unlocatedPanel');
+  if(!btn||!panel)return;
+  panel.hidden=!visible;
+  btn.setAttribute('aria-expanded',String(visible));
+}
+function analyzeButton(o){return button('Objekt analysieren','map-popup-action',()=>openObject(o))}
+function row(o){
+  const wrap=node('div',undefined,'map-area-listing');
+  wrap.appendChild(node('span',o.title||'Immobilienangebot'));
+  wrap.appendChild(node('small',[o.location||'Ort unbekannt',o.portal||''].filter(Boolean).join(' · ')));
   wrap.appendChild(analyzeButton(o));
   return wrap;
 }
-function listingRow(o){
-  const row=node('div',undefined,'map-area-listing');
-  row.appendChild(node('span',o.title||'Immobilienangebot'));
-  row.appendChild(node('small',[o.location||'Ort unbekannt',o.portal||''].filter(Boolean).join(' · ')));
-  row.appendChild(analyzeButton(o));
-  return row;
-}
-function setUnlocatedVisible(open){
-  const toggle=$('unlocatedToggle'),panel=$('unlocatedPanel');
-  if(!toggle||!panel)return;
-  panel.hidden=!open;toggle.setAttribute('aria-expanded',String(open));
-}
-function drawUnlocated(data){
-  const apartments=data.unlocated.filter(o=>root.ImmoRadarCore?.type(o)==='apartment');
+function paintUnlocated(all){
+  const apartments=all.unlocated.filter(o=>type(o)==='apartment');
   const btn=$('unlocatedToggle'),count=$('unlocatedCount'),list=$('unlocatedList');
   if(!btn||!count||!list)return;
-  btn.hidden=!apartments.length;
+  btn.hidden=apartments.length===0;
   count.textContent=apartments.length;
-  list.replaceChildren(...apartments.map(listingRow));
-  if(!apartments.length)setUnlocatedVisible(false);
+  list.replaceChildren(...apartments.map(row));
+  if(!apartments.length)showUnlocated(false);
 }
-function centerOf(positions){
-  const center=positions.reduce((a,p)=>({lat:a.lat+p.lat,lon:a.lon+p.lon}),{lat:0,lon:0});
-  return {lat:center.lat/positions.length,lon:center.lon/positions.length};
-}
-function showGroup(positions){
+function focus(positions){
   if(!positions.length)return;
-  const c=centerOf(positions);
-  setUnlocatedVisible(false);
+  const lat=positions.reduce((sum,p)=>sum+p.lat,0)/positions.length;
+  const lon=positions.reduce((sum,p)=>sum+p.lon,0)/positions.length;
+  state={lat,lon,zoom:Math.max(13,state.zoom)};
+  expanded=positions.length>1?{key:'focused',positions,lat,lon}:null;
+  schedule();
   $('propertyMap')?.scrollIntoView({behavior:'smooth',block:'center'});
-  if(map){
-    const zoom=Math.max(12,map.getZoom());
-    clearSpiders();
-    map.once('moveend',()=>{
-      renderMarkers();
-      // Listings sharing an approximate town location fan out immediately.
-      const same=positions.filter(p=>Math.abs(p.lat-c.lat)<0.00001&&Math.abs(p.lon-c.lon)<0.00001);
-      if(same.length>1)drawSpider(same,[c.lat,c.lon],'selected-group:'+same.map(p=>p.listing.url).join('|'));
-    });
-    map.flyTo([c.lat,c.lon],zoom,{duration:.45});
-  }else{
-    focusFallback(c.lat,c.lon);
-    drawFallback();
-  }
 }
-function drawGroups(data){
-  const host=$('mapAreaGroups');
-  if(!host)return;
+function paintGroupList(all){
+  const host=$('mapAreaGroups');if(!host)return;
   host.replaceChildren();
   const groups=new Map();
-  for(const p of data.positions){
-    const key=p.approximate?p.key:'Koordinaten aus Datenquelle';
+  for(const pos of all.positions){
+    const key=pos.approximate?pos.key:'Koordinaten aus Angebotsdaten';
     if(!groups.has(key))groups.set(key,[]);
-    groups.get(key).push(p);
+    groups.get(key).push(pos);
   }
-  for(const [key,positions] of groups){
-    const details=node('details',undefined,'map-area-group');
-    details.appendChild(node('summary',key+' · '+positions.length+' Angebote · auf Karte zeigen'));
-    details.addEventListener('toggle',()=>{if(details.open)showGroup(positions)});
+  for(const [key,group] of groups){
+    const d=node('details',undefined,'map-area-group');
+    const title=node('summary',key+' · '+group.length+' Angebote · auf Karte zoomen');
+    d.appendChild(title);
+    d.addEventListener('toggle',()=>{if(d.open)focus(group)});
     const inner=node('div',undefined,'map-area-group-content');
-    inner.appendChild(node('p',key==='Koordinaten aus Datenquelle'?'Koordinaten wurden nicht unabhängig überprüft.':'Ortsmitte, keine Objektadresse.','map-popup-disclaimer'));
-    for(const p of positions)inner.appendChild(listingRow(p.listing));
-    details.appendChild(inner);
-    host.appendChild(details);
+    inner.appendChild(node('p','Ortsmittelpunkt bedeutet keine genaue Gebäudeadresse.','map-popup-disclaimer'));
+    for(const p of group)inner.appendChild(row(p.listing));
+    d.appendChild(inner);host.appendChild(d);
   }
-  if(data.unlocated.length){
-    const details=node('details',undefined,'map-area-group');
-    details.appendChild(node('summary','Ohne Standort · '+data.unlocated.length+' Angebote'));
+  if(all.unlocated.length){
+    const d=node('details',undefined,'map-area-group');
+    d.appendChild(node('summary','Ohne Standort · '+all.unlocated.length+' Angebote'));
     const inner=node('div',undefined,'map-area-group-content');
-    for(const o of data.unlocated)inner.appendChild(listingRow(o));
-    details.appendChild(inner);host.appendChild(details);
+    for(const o of all.unlocated)inner.appendChild(row(o));
+    d.appendChild(inner);host.appendChild(d);
   }
   if(!host.children.length)host.appendChild(node('p','Keine Angebote in dieser Auswahl.'));
 }
-function clearSpiders(){
-  if(spiderLayer)spiderLayer.clearLayers();
-  expandedKey=null;
+function positionedPin(x,y,label,cls,onClick,title){
+  const p=button(label,'map-native-pin '+cls,onClick,title);
+  p.style.left=x+'px';p.style.top=y+'px';
+  pinsLayer.appendChild(p);
+  return p;
 }
-function icon(type,count=1){
-  const many=count>1;
-  const cls='map-pin-symbol '+(many?'map-pin-cluster':'map-pin-single')+
-    ' '+(type==='apartment'?'map-pin-apartment':'map-pin-house');
-  return root.L.divIcon({className:cls,html:'<span>'+ (many?count:(type==='apartment'?'W':'H'))+'</span>',
-    iconSize:[many?40:30,many?40:30],iconAnchor:[many?20:15,many?20:15]});
-}
-function addSingle(p,tip,layer=groupLayer){
-  const marker=root.L.marker(tip||[p.lat,p.lon],{
-    icon:icon(root.ImmoRadarCore?.type(p.listing)),
-    title:(p.listing.title||'Immobilie')+(p.approximate?' – Ortsmittelpunkt':''),
-    keyboard:true
-  }).bindPopup(popup(p.listing,p.approximate),{maxWidth:330});
-  marker.on('click',ev=>root.L.DomEvent.stopPropagation(ev));
-  marker.addTo(layer);
-  return marker;
-}
-function drawSpider(group,latLng,key){
-  if(!map||!spiderLayer)return;
-  clearSpiders();expandedKey=key;
-  const origin=map.latLngToLayerPoint(latLng),offsets=D.spiderOffsets(group.length);
-  group.forEach((p,i)=>{
-    const tip=map.layerPointToLatLng(root.L.point(origin.x+offsets[i].x,origin.y+offsets[i].y));
-    root.L.polyline([latLng,tip],{color:'#795c37',weight:1.8,opacity:.85,interactive:false,className:'map-spider-leg'}).addTo(spiderLayer);
-    addSingle(p,tip,spiderLayer);
-  });
-}
-function renderMarkers(){
-  if(!map||!groupLayer||!root.L)return;
-  clearSpiders();groupLayer.clearLayers();
-  const clusters=D.clusters(D.pins(rows).positions,(lat,lon)=>{
-    const pt=map.latLngToLayerPoint([lat,lon]);return {x:pt.x,y:pt.y};
-  },46);
-  for(const group of clusters){
-    if(group.length===1){addSingle(group[0]);continue}
-    const mean=group.reduce((a,p)=>{
-      const v=map.latLngToLayerPoint([p.lat,p.lon]);a.x+=v.x;a.y+=v.y;return a;
-    },{x:0,y:0});
-    const center=map.layerPointToLatLng(root.L.point(mean.x/group.length,mean.y/group.length));
-    const type=group.some(p=>root.ImmoRadarCore?.type(p.listing)==='apartment')?'apartment':'house';
-    const marker=root.L.marker(center,{icon:icon(type,group.length),keyboard:true,title:group.length+' Objekte – anklicken zum Auffächern'});
-    marker.on('click',ev=>{
-      root.L.DomEvent.stopPropagation(ev);
-      const key=group.map(p=>p.listing.url||p.listing.title).join('|');
-      if(expandedKey===key){clearSpiders();return}
-      drawSpider(group,center,key);
-    });
-    marker.addTo(groupLayer);
+function spider(group,center){
+  if(!group.length)return;
+  const offsets=D.spiderOffsets(group.length);
+  for(let i=0;i<group.length;i++){
+    const p=group[i],off=offsets[i],x=center.x+off.x,y=center.y+off.y;
+    const ln=svgNode('line');
+    for(const [name,value] of Object.entries({x1:center.x,y1:center.y,x2:x,y2:y}))ln.setAttribute(name,String(value));
+    legsLayer.appendChild(ln);
+    positionedPin(x,y,type(p.listing)==='apartment'?'W':'H',
+      type(p.listing)==='apartment'?'map-native-apartment':'map-native-house',
+      ()=>openObject(p.listing),(p.listing.title||'Immobilie')+' – einzelnes Angebot'+(p.approximate?' (ungefähre Ortsmitte)':''));
   }
 }
-/* The OpenStreetMap iframe is cross-origin and independently chooses its own
- * zoom/viewport aspect ratio. Drawing geographic pins over it based on the URL
- * bbox is not accurate. In no-Leaflet mode: only show the map and listing list.
- */
-function updateFrame(){
-  const frame=$('mapFallback');
-  if(!frame||frame.hidden)return;
-  const b=fallbackBounds;
-  const bounds=[b.west,b.south,b.east,b.north].map(n=>n.toFixed(6)).join('%2C');
-  const url='https://www.openstreetmap.org/export/embed.html?bbox='+bounds+'&layer=mapnik';
-  if(frame.getAttribute('src')!==url)frame.setAttribute('src',url);
+function paintPins(){
+  if(!pinsLayer||!legsLayer)return;
+  pinsLayer.replaceChildren();
+  legsLayer.replaceChildren();
+  const all=D.pins(rows),{w,h}=size();
+  const project=(lat,lon)=>screenPoint(lat,lon);
+  const clusters=D.clusters(all.positions,project,46);
+  for(const group of clusters){
+    const p=group.map(v=>project(v.lat,v.lon));
+    const x=p.reduce((a,v)=>a+v.x,0)/p.length;
+    const y=p.reduce((a,v)=>a+v.y,0)/p.length;
+    if(x<0||x>w||y<0||y>h)continue;
+    if(group.length===1){
+      const listing=group[0];
+      positionedPin(x,y,type(listing.listing)==='apartment'?'W':'H',
+        type(listing.listing)==='apartment'?'map-native-apartment':'map-native-house',
+        ()=>openObject(listing.listing),(listing.listing.title||'Immobilie')+(listing.approximate?' – ungefähre Ortsmitte':''));
+      continue;
+    }
+    const id=group.map(p=>p.listing.url||p.listing.title).sort().join('|');
+    positionedPin(x,y,String(group.length),'map-native-cluster',()=>{
+      expanded=expanded?.key===id?null:{key:id,positions:group,lat:group[0].lat,lon:group[0].lon,anchor:{x,y}};
+      schedule();
+    },group.length+' Objekte – anklicken zum Auffächern');
+  }
+  if(expanded){
+    let origin=expanded.anchor||screenPoint(expanded.lat,expanded.lon);
+    // Recalculate the center after every pan so the spider legs stay attached.
+    if(expanded.key!=='focused'){
+      const pts=expanded.positions.map(p=>screenPoint(p.lat,p.lon));
+      origin={x:pts.reduce((a,p)=>a+p.x,0)/pts.length,y:pts.reduce((a,p)=>a+p.y,0)/pts.length};
+    }
+    if(origin.x>=-80&&origin.x<=w+80&&origin.y>=-80&&origin.y<=h+80)
+      spider(expanded.positions,origin);
+  }
 }
-function focusFallback(lat,lon){
-  const halfWidth=0.09,halfHeight=0.06;
-  fallbackBounds={west:lon-halfWidth,east:lon+halfWidth,south:lat-halfHeight,north:lat+halfHeight};
-  updateFrame();
+function render(){
+  if(!viewport)return;
+  scheduled=false;
+  paintTiles();paintLandmarks();paintPins();
 }
-function drawFallback(){
-  const overlay=$('mapFallbackPins');
-  // Never display pins independent of the map they purport to geolocate.
-  if(overlay){overlay.replaceChildren();overlay.hidden=true;}
+function schedule(){
+  if(scheduled)return;
+  scheduled=true;
+  root.requestAnimationFrame(render);
+}
+function zoomTo(z,anchorX,anchorY){
+  z=Math.max(LIMIT.minZoom,Math.min(LIMIT.maxZoom,Math.round(z)));
+  if(z===state.zoom)return;
+  const {w,h}=size();
+  const x=anchorX??w/2,y=anchorY??h/2;
+  const geographic=coordinateAt(x,y);
+  const point=D.project(geographic.lat,geographic.lon,z),scale=256*2**z;
+  const center=D.unproject(point.x+w/2-x,point.y+h/2-y,z);
+  state={lat:Math.max(-85,Math.min(85,center.lat)),lon:normalizeLongitude(center.lon),zoom:z};
+  expanded=null;
+  schedule();
+}
+function pan(dx,dy){
+  const center=worldCenter();
+  const loc=D.unproject(center.x-dx,center.y-dy,state.zoom);
+  state.lat=Math.max(-85,Math.min(85,loc.lat));
+  state.lon=normalizeLongitude(loc.lon);
+  expanded=null;schedule();
+}
+function init(){
+  viewport=$('mapInteractive');
+  if(!viewport||viewport.dataset.initialized==='true')return;
+  viewport.dataset.initialized='true';
+  viewport.replaceChildren();
+  viewport.removeAttribute('aria-hidden');
+  viewport.classList.add('map-native');
+  // All layers are children of a single interactive viewport, not an iframe.
+  tiles=node('div',undefined,'map-native-tiles');
+  landmarkLayer=node('div',undefined,'map-native-landmarks');
+  legsLayer=svgNode('svg');legsLayer.classList.add('map-native-legs');
+  legsLayer.setAttribute('aria-hidden','true');
+  pinsLayer=node('div',undefined,'map-native-pins');
+  viewport.append(tiles,landmarkLayer,legsLayer,pinsLayer);
+  const zoomBox=node('div',undefined,'map-native-zoom');
+  zoomBox.append(
+    button('+','map-native-zoom-button',()=>zoomTo(state.zoom+1),'Vergrößern'),
+    button('−','map-native-zoom-button',()=>zoomTo(state.zoom-1),'Verkleinern')
+  );
+  viewport.appendChild(zoomBox);
+  const attribution=node('div',undefined,'map-native-attribution');
+  const osm=node('a','© OpenStreetMap-Mitwirkende');
+  osm.href='https://www.openstreetmap.org/copyright';osm.target='_blank';osm.rel='noopener noreferrer';
+  attribution.appendChild(osm);
+  viewport.appendChild(attribution);
+  viewport.addEventListener('pointerdown',e=>{
+    if(e.button!==0||e.target.closest('button,a'))return;
+    drag={id:e.pointerId,startX:e.clientX,startY:e.clientY,lat:state.lat,lon:state.lon,moved:false};
+    viewport.setPointerCapture(e.pointerId);
+  });
+  viewport.addEventListener('pointermove',e=>{
+    if(!drag||drag.id!==e.pointerId)return;
+    const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
+    if(Math.abs(dx)+Math.abs(dy)>2)drag.moved=true;
+    const base=D.project(drag.lat,drag.lon,state.zoom);
+    const coord=D.unproject(base.x-dx,base.y-dy,state.zoom);
+    state.lat=Math.max(-85,Math.min(85,coord.lat));
+    state.lon=normalizeLongitude(coord.lon);
+    expanded=null;schedule();
+  });
+  viewport.addEventListener('pointerup',e=>{if(drag?.id===e.pointerId)drag=null});
+  viewport.addEventListener('pointercancel',()=>{drag=null});
+  viewport.addEventListener('wheel',e=>{
+    if(!e.ctrlKey)return; // keep ordinary page scrolling usable
+    e.preventDefault();
+    const rect=viewport.getBoundingClientRect();
+    zoomTo(state.zoom+(e.deltaY<0?1:-1),e.clientX-rect.left,e.clientY-rect.top);
+  },{passive:false});
+  viewport.addEventListener('keydown',e=>{
+    const panKey={ArrowLeft:[65,0],ArrowRight:[-65,0],ArrowUp:[0,65],ArrowDown:[0,-65]};
+    if(panKey[e.key]){e.preventDefault();pan(...panKey[e.key])}
+    if(e.key==='+'||e.key==='='){e.preventDefault();zoomTo(state.zoom+1)}
+    if(e.key==='-'){e.preventDefault();zoomTo(state.zoom-1)}
+  });
+  $('mapReset')?.addEventListener('click',()=>{state={...initial};expanded=null;schedule()});
+  $('unlocatedToggle')?.addEventListener('click',()=>showUnlocated($('unlocatedPanel')?.hidden));
+  $('unlocatedClose')?.addEventListener('click',()=>{showUnlocated(false);$('unlocatedToggle')?.focus()});
+  root.addEventListener('resize',schedule);
+  if(root.ResizeObserver)new root.ResizeObserver(schedule).observe(viewport);
+  const legacy=$('mapFallback');if(legacy){legacy.remove()}
+  const oldPins=$('mapFallbackPins');if(oldPins){oldPins.remove()}
+  const msg=$('mapFallbackNotice');if(msg)msg.hidden=true;
+  paintGroupList(D.pins(rows));paintUnlocated(D.pins(rows));
+  render();
 }
 function update(next){
   rows=Array.isArray(next)?next:[];
-  const data=D.pins(rows);
-  drawGroups(data);drawUnlocated(data);
-  const approximate=data.positions.filter(p=>p.approximate).length;
-  const missing=data.unlocated.filter(o=>root.ImmoRadarCore?.type(o)==='apartment').length;
-  if($('mapCount'))$('mapCount').textContent=data.positions.length+' Pins · '+missing+' ohne Ort';
-  if($('mapNote'))$('mapNote').textContent=map
-    ? data.positions.length+' von '+rows.length+' Angeboten auf der Karte (davon '+approximate+' nur am ungefähren Ortsmittelpunkt). '+
-      missing+' Wohnungen ohne Standort rechts gesammelt. Ortsgruppen anklicken zum Zoomen, Cluster anklicken zum Auffächern. Kein Pin steht für eine überprüfte Gebäudeadresse.'
-    : data.positions.length+' Angebote mit zuordenbarem Ort ('+approximate+' ungefähre Ortsmittelpunkte). Die Ersatzkarte zeigt aus Genauigkeitsgründen KEINE einzelnen Pins; die Ortsgruppenliste öffnet jedes Angebot. '+missing+' Wohnungen ohne Standort rechts gesammelt.';
-  if(map)renderMarkers();else drawFallback();
+  const all=D.pins(rows);
+  paintGroupList(all);paintUnlocated(all);
+  const approximate=all.positions.filter(p=>p.approximate).length;
+  const noPlace=all.unlocated.filter(o=>type(o)==='apartment').length;
+  if($('mapCount'))$('mapCount').textContent=all.positions.length+' Pins · '+noPlace+' ohne Ort';
+  if($('mapNote'))$('mapNote').textContent=
+    all.positions.length+' Angebote auf der Karte, davon '+approximate+' mit ungefährer Ortslage. '+
+    noPlace+' Wohnungen ohne Standort rechts gesammelt. Ortsgruppen zoomen; Cluster fächern alle Einzelpins auf. Keine Ortsmitte ist eine genaue Objektadresse.';
+  expanded=null;schedule();
 }
-function init(){
-  if(map)return;
-  const el=$('mapInteractive');
-  if(!el||!D)return;
-  $('unlocatedToggle')?.addEventListener('click',()=>setUnlocatedVisible($('unlocatedPanel')?.hidden));
-  $('unlocatedClose')?.addEventListener('click',()=>{setUnlocatedVisible(false);$('unlocatedToggle')?.focus()});
-  $('mapReset')?.addEventListener('click',()=>{
-    clearSpiders();
-    if(map)map.fitBounds(circle.getBounds(),{padding:[22,22],maxZoom:11});
-    else {fallbackBounds={...initialBounds};updateFrame();drawFallback()}
-  });
-  root.addEventListener?.('resize',()=>{
-    if(map)map.invalidateSize();
-    else drawFallback();
-  });
-  if(!root.L){
-    // The cross-origin embedded map can choose its own zoom and aspect ratio.
-    // We NEVER position geographic pins over it. The grouped listing panel
-    // remains available, and the alternative Leaflet CDN may still load.
-    const frame=$('mapFallback');
-    if(frame)frame.setAttribute('tabindex','-1');
-    const notice=$('mapFallbackNotice');if(notice)notice.hidden=false;
-    update(rows);return;
-  }
-  try{
-    map=root.L.map(el,{scrollWheelZoom:false,zoomControl:true});
-    // Important: the Leaflet tile layer and property markers MUST share the
-    // same coordinate system. Never render the separately pannable OSM iframe
-    // underneath Leaflet markers: it drifts as soon as either map moves.
-    const frame=$('mapFallback');
-    if(frame){frame.hidden=true;frame.setAttribute('aria-hidden','true')}
-    const fallbackPins=$('mapFallbackPins');
-    if(fallbackPins)fallbackPins.hidden=true;
-    const tiles=root.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap-Mitwirkende</a> · Orte: <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>'
-    });
-    let errorCount=0,secondary=false;
-    tiles.on('tileload',()=>{
-      tilesReady=true;
-      const note=$('mapTileNotice');if(note)note.hidden=true;
-    });
-    // If the main OSM tile host is unreachable, try a second OSM-based
-    // provider. Either way pins remain attached to the Leaflet map, not an iframe.
-    tiles.on('tileerror',()=>{
-      if(tilesReady||secondary||++errorCount<4)return;
-      secondary=true;
-      const note=$('mapTileNotice');
-      if(note)note.hidden=false;
-      root.L.tileLayer('https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',{
-        maxZoom:19,
-        attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>'
-      }).on('tileload',()=>{tilesReady=true;if(note)note.hidden=true})
-        .addTo(map);
-      map.removeLayer(tiles);
-    });
-    tiles.addTo(map);
-    const center=[D.searchCenter.lat,D.searchCenter.lon];
-    circle=root.L.circle(center,{radius:D.radiusKm*1000,color:'#196b4b',weight:2,fillColor:'#196b4b',fillOpacity:.08,interactive:false}).addTo(map);
-    root.L.circleMarker(center,{radius:7,color:'#fff',weight:3,fillColor:'#13251d',fillOpacity:1}).bindPopup('Suchmittelpunkt: 85622 Feldkirchen').addTo(map);
-    groupLayer=root.L.layerGroup().addTo(map);
-    spiderLayer=root.L.layerGroup().addTo(map);
-    map.on('click',clearSpiders);
-    map.on('zoomstart',clearSpiders);
-    map.on('zoomend',renderMarkers);
-    // Leaflet alone owns panning/zooming; do not change a second map's bbox.
-    el.style.visibility='visible';el.removeAttribute('aria-hidden');
-    const host=$('mapFallbackPins');if(host)host.hidden=true;
-    map.fitBounds(circle.getBounds(),{padding:[22,22],maxZoom:11});
-    update(rows);
-    root.setTimeout(()=>map?.invalidateSize(),0);
-  }catch(err){
-    if(map)try{map.remove()}catch{}
-    map=null;groupLayer=null;spiderLayer=null;
-    el.style.visibility='hidden';el.setAttribute('aria-hidden','true');
-    const frame=$('mapFallback');if(frame){frame.hidden=false;frame.removeAttribute('aria-hidden')}
-    const notice=$('mapFallbackNotice');if(notice)notice.hidden=false;
-    if(root.console?.warn)root.console.warn('Falling back to OpenStreetMap embed and local pins',err);
-    update(rows);
-  }
-}
-root.ImmoRadarMap=Object.freeze({update,showGroup,init});
+root.ImmoRadarMap=Object.freeze({update,init,focus});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
 else init();
 })(globalThis);
