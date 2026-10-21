@@ -95,7 +95,7 @@ assert.match(page,/id="unlocatedList"/,'Unknown-location cluster displays all me
 assert.match(page,/src="\.\/map-view\.js"/);
 const view=await readFile(new URL('../map-view.js',import.meta.url),'utf8');
 assert.match(view,/tiles\.on\('tileload'/,'Interactive map may replace fallback only on successful tile');
-assert.match(view,/if\(frame\)frame\.hidden=true/,'Fallback hidden only once Leaflet is usable');
+assert.match(view,/if\(frame\)\{frame\.hidden=true/,'Fallback must be hidden as soon as Leaflet owns the coordinates');
 assert.match(view,/drawGroups\(data\)/,'Accessible listings must update with filters');
 assert.match(view,/drawSpider\(group,center,key\)/,'Cluster click spiders all members');
 assert.match(view,/root\.L\.polyline\(\[latLng,tip\]/,'Spider legs rendered as lines');
@@ -108,7 +108,18 @@ assert.match(view,/el\.style\.visibility='visible'/,'Leaflet pins become visible
 assert.match(view,/drawFallback\(\)/,'Non-Leaflet fallback displays geographic listing pins');
 assert.match(view,/root\.L\.polyline\(\[latLng,tip\]/,'Spider legs still connect individual listing pins');
 const stylesheet=await readFile(new URL('../dashboard.css',import.meta.url),'utf8');
-assert.match(stylesheet,/\.map-interactive\.leaflet-container\{background:transparent!important\}/,
-  'Interactive overlay must be transparent over iframe until tiles load');
+assert.match(stylesheet,/\.map-interactive\.leaflet-container\{background:#edf0ea!important\}/,
+  'Leaflet owns the basemap rather than leaving a transparent iframe underneath');
 assert.match(stylesheet,/\.map-fallback-pin\{/,'Fallback pins should have a visible style');
-console.log('PASS: map radius, coordinate safety, filtered markers and collapsible filters');
+
+assert.match(stylesheet,/\.map-interactive \.leaflet-tile-pane\{visibility:visible!important\}/,
+  'Map tiles must remain visible and synchronized with pins');
+assert.match(stylesheet,/\.map-fallback-frame\{pointer-events:none\}/,
+  'Fallback iframe cannot be independently panned away from static pins');
+assert.match(view,/const frame=\$\('mapFallback'\);\s*if\(frame\)\{frame\.hidden=true/,
+  'Leaflet mode immediately hides the unsynchronized iframe');
+assert.doesNotMatch(view,/map\.on\('moveend',[\s\S]*?updateFrame\(\)/,
+  'Leaflet may not pan a second independent map as its basemap');
+assert.match(page,/id="mapFallbackNotice"/,
+  'Fallback has a clear explanation that pan is disabled');
+console.log('PASS: map positions stay attached to the basemap, filter logic and spider groups');
