@@ -169,3 +169,11 @@ python3 -m http.server 8000
 ~~~
 
 Anschließend http://localhost:8000 öffnen und Erfassung, Preisänderungen, Budget, Karte und Suchprofile mit eigenen Testdaten prüfen. file:// kann die JSON-Anbindung blockieren.
+
+## OpenStreetMap-Karte und einklappbare Filter
+
+Oben im Dashboard befindet sich eine interaktive OpenStreetMap-Karte mit dem aus der gespeicherten Suche bekannten Mittelpunkt **85622 Feldkirchen (48.14786, 11.72973)** und einem **100-km-Suchradius**. Der Ausschnitt lässt sich mit „100-km-Gebiet anzeigen“ zurücksetzen. Die Karte verwendet Leaflet 1.9.4 und Kartenkacheln von `tile.openstreetmap.org`. Beim Öffnen wird eine Verbindung zu externen Servern (Leaflet von unpkg.com, Tiles von OpenStreetMap) aufgebaut. Die OpenStreetMap-Urheberhinweise erscheinen in der Karte.
+
+**Objektmarker erscheinen nur, wenn ein Datensatz überprüfbare numerische Felder `lat` und `lon` enthält und innerhalb von 100 km liegt.** Die bisherigen E-Mail-Listen enthalten keine Objektkoordinaten, deshalb zeigt die Karte vorerst den Suchmittelpunkt und den Radius, aber keine geschätzten Immobilienmarker. Es erfolgt **keine automatische Geokodierung** unbekannter Adressen oder Orte. Filteränderungen aktualisieren die Marker zusammen mit den Trefferkarten. Marker öffnen eine Objektvorschau mit Zugriff auf die vorhandene Analyse.
+
+Alle Filter sind innerhalb der nativen, tastaturbedienbaren HTML-`details`-Komponente standardmäßig vollständig eingeklappt und bleiben nach dem Öffnen funktionsfähig. Karten- und Filtertests laufen in `.github/workflows/tests.yml`.
