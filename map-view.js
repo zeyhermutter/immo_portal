@@ -4,7 +4,7 @@
  */
 (function(root){'use strict';
 const D=root.ImmoRadarMapCore,$=id=>document.getElementById(id);
-let map=null,groupLayer=null,spiderLayer=null,circle=null,rows=[],tilesReady=false,expandedKey=null,fallbackExpanded=null;
+let map=null,groupLayer=null,spiderLayer=null,circle=null,rows=[],tilesReady=false,expandedKey=null;
 const initialBounds={west:10.35,south:47.23,east:13.11,north:49.07};
 let fallbackBounds={...initialBounds};
 function node(tag,value,cls){
@@ -70,8 +70,6 @@ function showGroup(positions){
     map.flyTo([c.lat,c.lon],zoom,{duration:.45});
   }else{
     focusFallback(c.lat,c.lon);
-    const keys=positions.map(p=>p.listing.url).sort().join('|');
-    fallbackExpanded=keys;
     drawFallback();
   }
 }
@@ -158,78 +156,27 @@ function renderMarkers(){
     marker.addTo(groupLayer);
   }
 }
-/* Fallback single pins use a geographic projection and can zoom to localities.
- * They never claim house-accurate coordinates when a city centre was used.
+/* The OpenStreetMap iframe is cross-origin and independently chooses its own
+ * zoom/viewport aspect ratio. Drawing geographic pins over it based on the URL
+ * bbox is not accurate. In no-Leaflet mode: only show the map and listing list.
  */
-const merc=lat=>Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
-function fallbackPoint(lat,lon,width,height){
-  const b=fallbackBounds;
-  return {
-    x:(lon-b.west)/(b.east-b.west)*width,
-    y:(merc(b.north)-merc(lat))/(merc(b.north)-merc(b.south))*height
-  };
-}
 function updateFrame(){
-  const frame=$('mapFallback');if(!frame||frame.hidden)return;
+  const frame=$('mapFallback');
+  if(!frame||frame.hidden)return;
   const b=fallbackBounds;
   const bounds=[b.west,b.south,b.east,b.north].map(n=>n.toFixed(6)).join('%2C');
   const url='https://www.openstreetmap.org/export/embed.html?bbox='+bounds+'&layer=mapnik';
   if(frame.getAttribute('src')!==url)frame.setAttribute('src',url);
 }
 function focusFallback(lat,lon){
-  const width=0.18,height=0.12;
-  fallbackBounds={west:lon-width/2,east:lon+width/2,south:lat-height/2,north:lat+height/2};
+  const halfWidth=0.09,halfHeight=0.06;
+  fallbackBounds={west:lon-halfWidth,east:lon+halfWidth,south:lat-halfHeight,north:lat+halfHeight};
   updateFrame();
-  drawFallback();
 }
 function drawFallback(){
-  const host=$('mapFallbackPins');if(!host)return;
-  host.replaceChildren();
-  if(map){host.hidden=true;return}
-  host.hidden=false;
-  const width=host.clientWidth||$('propertyMap')?.clientWidth||800;
-  const height=host.clientHeight||$('propertyMap')?.clientHeight||350;
-  const positions=D.pins(rows).positions;
-  const project=(lat,lon)=>fallbackPoint(lat,lon,width,height);
-  const clusters=D.clusters(positions,project,46);
-  const all=clusters.map(group=>{
-    const center=group.reduce((a,p)=>{const v=project(p.lat,p.lon);a.x+=v.x;a.y+=v.y;return a},{x:0,y:0});
-    return {group,x:center.x/group.length,y:center.y/group.length};
-  }).filter(g=>g.x>=15&&g.x<=width-15&&g.y>=16&&g.y<=height-16);
-  const makeButton=(label,x,y,title,cls,action)=>{
-    const btn=node('button',label,'map-fallback-pin '+cls);
-    btn.type='button';btn.title=title;btn.setAttribute('aria-label',title);
-    btn.style.left=x+'px';btn.style.top=y+'px';
-    btn.addEventListener('click',action);host.appendChild(btn);
-  };
-  for(const record of all){
-    const {group,x,y}=record;
-    if(group.length===1){
-      const p=group[0];
-      makeButton(root.ImmoRadarCore?.type(p.listing)==='apartment'?'W':'H',x,y,(p.listing.title||'Immobilie')+' – '+(p.approximate?'ungefährer Ortsmittelpunkt':'Koordinaten aus Anzeige'),'map-fallback-single',()=>openObject(p.listing));
-      continue;
-    }
-    const key=group.map(p=>p.listing.url||p.listing.title).sort().join('|');
-    makeButton(String(group.length),x,y,group.length+' Objekte aufklappen','map-fallback-cluster',()=>{
-      fallbackExpanded=fallbackExpanded===key?null:key;drawFallback();
-    });
-    if(fallbackExpanded===key){
-      const offsets=D.spiderOffsets(group.length);
-      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-      svg.classList.add('map-fallback-lines');
-      svg.setAttribute('width',String(width));svg.setAttribute('height',String(height));
-      svg.setAttribute('aria-hidden','true');
-      for(let i=0;i<group.length;i++){
-        const tip={x:x+offsets[i].x,y:y+offsets[i].y};
-        const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-        for(const [k,v] of Object.entries({x1:x,y1:y,x2:tip.x,y2:tip.y}))line.setAttribute(k,String(v));
-        svg.appendChild(line);
-        const p=group[i],type=root.ImmoRadarCore?.type(p.listing);
-        makeButton(type==='apartment'?'W':'H',tip.x,tip.y,(p.listing.title||'Immobilie')+' – einzeln öffnen','map-fallback-single map-fallback-spider',()=>openObject(p.listing));
-      }
-      host.prepend(svg);
-    }
-  }
+  const overlay=$('mapFallbackPins');
+  // Never display pins independent of the map they purport to geolocate.
+  if(overlay){overlay.replaceChildren();overlay.hidden=true;}
 }
 function update(next){
   rows=Array.isArray(next)?next:[];
@@ -244,12 +191,13 @@ function update(next){
   if(map)renderMarkers();else drawFallback();
 }
 function init(){
+  if(map)return;
   const el=$('mapInteractive');
   if(!el||!D)return;
   $('unlocatedToggle')?.addEventListener('click',()=>setUnlocatedVisible($('unlocatedPanel')?.hidden));
   $('unlocatedClose')?.addEventListener('click',()=>{setUnlocatedVisible(false);$('unlocatedToggle')?.focus()});
   $('mapReset')?.addEventListener('click',()=>{
-    clearSpiders();fallbackExpanded=null;
+    clearSpiders();
     if(map)map.fitBounds(circle.getBounds(),{padding:[22,22],maxZoom:11});
     else {fallbackBounds={...initialBounds};updateFrame();drawFallback()}
   });
@@ -258,8 +206,9 @@ function init(){
     else drawFallback();
   });
   if(!root.L){
-    // The fallback iframe is a static reference image with separately
-    // positioned pins. Disable iframe gestures so users cannot de-sync them.
+    // The cross-origin embedded map can choose its own zoom and aspect ratio.
+    // We NEVER position geographic pins over it. The grouped listing panel
+    // remains available, and the alternative Leaflet CDN may still load.
     const frame=$('mapFallback');
     if(frame)frame.setAttribute('tabindex','-1');
     const notice=$('mapFallbackNotice');if(notice)notice.hidden=false;
@@ -321,7 +270,7 @@ function init(){
     update(rows);
   }
 }
-root.ImmoRadarMap=Object.freeze({update,showGroup});
+root.ImmoRadarMap=Object.freeze({update,showGroup,init});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
 else init();
 })(globalThis);
