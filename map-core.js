@@ -97,5 +97,62 @@ function grouping(rows){
   }
   return {exact,localities:[...groups.values()],withoutLocation};
 }
-root.ImmoRadarMapCore=Object.freeze({searchCenter,radiusKm,point,located,placeKey,locality,grouping});
+
+/* A pin is always one REAL listing; its position may be an approximate locality.
+ * Unknown locations are kept out of geographic coordinates entirely.
+ */
+function pins(rows){
+  const positions=[],unlocated=[];
+  for(const listing of Array.isArray(rows)?rows:[]){
+    const exact=point(listing),approximate=exact?null:locality(listing);
+    const position=exact||approximate;
+    if(position)positions.push({...position,listing,approximate:position.kind==='locality'});
+    else unlocated.push(listing);
+  }
+  return {positions,unlocated};
+}
+/* Screen-pixel clustering, recalculated at every zoom or filter change.
+ * Connected-component grouping gives every item exactly one cluster.
+ */
+function clusters(positions,project,threshold=44){
+  if(!Array.isArray(positions)||!positions.length)return [];
+  const xy=positions.map(p=>project(p.lat,p.lon));
+  const parent=positions.map((_,i)=>i);
+  const find=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i]}return i};
+  const join=(a,b)=>{const ra=find(a),rb=find(b);if(ra!==rb)parent[rb]=ra};
+  for(let i=0;i<positions.length;i++)for(let j=i+1;j<positions.length;j++){
+    const dx=xy[i].x-xy[j].x,dy=xy[i].y-xy[j].y;
+    if(dx*dx+dy*dy<=threshold*threshold)join(i,j);
+  }
+  const groups=new Map();
+  for(let i=0;i<positions.length;i++){
+    const k=find(i);
+    if(!groups.has(k))groups.set(k,[]);
+    groups.get(k).push(positions[i]);
+  }
+  return [...groups.values()];
+}
+/* Each spider leg is a separate listing icon and clickable popup.
+ * Uses a golden-angle spiral for large clusters to avoid a fixed 8-pin cap.
+ */
+function spiderOffsets(count){
+  if(!Number.isInteger(count)||count<1)return [];
+  const out=[];
+  if(count<=8){
+    const radius=30+count*4;
+    for(let i=0;i<count;i++){
+      const a=-Math.PI/2+2*Math.PI*i/count;
+      out.push({x:Math.round(Math.cos(a)*radius),y:Math.round(Math.sin(a)*radius)});
+    }
+  }else{
+    for(let i=0;i<count;i++){
+      const a=-Math.PI/2+i*2.399963229728653;
+      const radius=36+18*Math.sqrt(i);
+      out.push({x:Math.round(Math.cos(a)*radius),y:Math.round(Math.sin(a)*radius)});
+    }
+  }
+  return out;
+}
+
+root.ImmoRadarMapCore=Object.freeze({searchCenter,radiusKm,point,located,placeKey,locality,grouping,pins,clusters,spiderOffsets});
 })(globalThis);
