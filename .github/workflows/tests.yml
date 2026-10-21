@@ -35,6 +35,7 @@ jobs:
           node tests/email-parser.test.mjs
           node tests/app-core.test.mjs
           node tests/map-core.test.mjs
+          node tests/map-dom.test.mjs
           node tests/snapshot-core.test.mjs
           node tests/market-check.mjs
           node scripts/sync-feeds.mjs --check
