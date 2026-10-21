@@ -100,4 +100,15 @@ assert.match(view,/drawGroups\(pins\)/,'Accessible listings must update with fil
 assert.match(view,/drawSpider\(group,latLng,key\)/,'Cluster click spiders all members');
 assert.match(view,/root\.L\.polyline\(\[latLng,tip\]/,'Spider legs rendered as lines');
 assert.match(view,/tiles\.on\('tileload'/,'Fallback hides only after successful OSM tile');
+assert.match(page,/id="mapFallbackPins"/,'Always-visible fallback pins exist above the embed');
+assert.match(view,/details\.addEventListener\('toggle'/,'Opening a locality group activates map focus');
+assert.match(view,/map\.flyTo\(\[c\.lat,c\.lon\],zoom/,'Locality group selection zooms interactive map');
+assert.match(view,/focusFallback\(c\.lat,c\.lon\)/,'Locality selection also zooms fallback map');
+assert.match(view,/el\.style\.visibility='visible'/,'Leaflet pins become visible without waiting for tiles');
+assert.match(view,/drawFallback\(\)/,'Non-Leaflet fallback displays geographic listing pins');
+assert.match(view,/root\.L\.polyline\(\[latLng,tip\]/,'Spider legs still connect individual listing pins');
+const stylesheet=await readFile(new URL('../dashboard.css',import.meta.url),'utf8');
+assert.match(stylesheet,/\.map-interactive\.leaflet-container\{background:transparent!important\}/,
+  'Interactive overlay must be transparent over iframe until tiles load');
+assert.match(stylesheet,/\.map-fallback-pin\{/,'Fallback pins should have a visible style');
 console.log('PASS: map radius, coordinate safety, filtered markers and collapsible filters');
