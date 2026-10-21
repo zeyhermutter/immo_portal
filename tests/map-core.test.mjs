@@ -29,6 +29,28 @@ assert.equal(M.located([]).length,0);
 assert.equal(M.located(null).length,0);
 assert.equal(M.located(C.filter([nearby,noCoords],{maxPrice:300000})).length,0,'Map respects listing filters');
 
+
+const district={propertyType:'apartment',location:'Am Luitpoldpark, München',price:350000,url:'https://example.org/6'};
+const district2={propertyType:'apartment',location:'Am Luitpoldpark, München',price:420000,url:'https://example.org/7'};
+const city={propertyType:'apartment',location:'Obermenzing, München',price:520000,url:'https://example.org/8'};
+const rural={propertyType:'house',location:'Gräfelfing, München (Kreis)',price:850000,url:'https://example.org/9'};
+const ambiguous={propertyType:'house',location:'Unbekannter Ort, München (Kreis)',url:'https://example.org/10'};
+const missing={propertyType:'house',location:'Ort in E-Mail nicht ausgewiesen',url:'https://example.org/11'};
+assert.equal(M.point(district),null,'Approximate locality is not an exact object marker');
+assert.equal(M.placeKey('Am Luitpoldpark, München'),'Am Luitpoldpark');
+assert.equal(M.placeKey('Obermenzing, München'),'München');
+assert.equal(M.placeKey('Gräfelfing, München (Kreis)'),'Gräfelfing');
+assert.equal(M.placeKey('Unbekannter Ort, München (Kreis)'),null,'Do not map Landkreis München listings to city centre');
+assert.equal(M.placeKey('Ort in E-Mail nicht ausgewiesen'),null);
+assert.equal(M.placeKey('Bad Abbach'),null,'Unknown localities stay unplotted');
+assert.equal(M.locality(nearby),null,'Listings with coordinates must not get fallback markers');
+const aggregated=M.grouping([nearby,district,district2,city,rural,ambiguous,missing]);
+assert.equal(aggregated.exact.length,1);
+assert.equal(aggregated.localities.length,3);
+assert.equal(aggregated.localities.find(g=>g.key==='Am Luitpoldpark').listings.length,2);
+assert.equal(aggregated.withoutLocation,2);
+assert.equal(M.grouping(C.filter([district,district2],{maxPrice:400000})).localities[0].listings.length,1);
+
 const page=await readFile(new URL('../index.html',import.meta.url),'utf8');
 assert.match(page,/<details class="filters" id="filterPanel">/);
 assert.match(page,/<form id="filters" class="filter-body"/);
