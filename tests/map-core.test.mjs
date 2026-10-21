@@ -81,60 +81,55 @@ for(const n of [1,2,7,8,9,16,50]){
 }
 assert.equal(M.spiderOffsets(0).length,0);
 
-const page=await readFile(new URL('../index.html',import.meta.url),'utf8');
-assert.match(page,/<details class="filters" id="filterPanel">/);
-assert.match(page,/<form id="filters" class="filter-body"/);
-assert.match(page,/id="propertyMap"/);
-assert.match(page,/id="mapFallback"/,'Fallback iframe must be present without JavaScript');
-assert.match(page,/openstreetmap\.org\/export\/embed\.html/,'Embedded map is always available');
-assert.match(page,/id="mapInteractive"/,'Leaflet must not replace the embedded fallback');
-assert.match(page,/id="mapAreaGroups"/,'Locality list is the no-map alternative');
-assert.match(page,/id="unlocatedZone"/,'Unknown locations have a separate non-geographic map overlay');
-assert.match(page,/id="unlocatedToggle"/,'Unknown-location cluster can be opened');
-assert.match(page,/id="unlocatedList"/,'Unknown-location cluster displays all members');
-assert.match(page,/src="\.\/map-view\.js\?v=20261021-mapfix"/);
-const view=await readFile(new URL('../map-view.js',import.meta.url),'utf8');
-assert.match(view,/tiles\.on\('tileload'/,'Interactive map may replace fallback only on successful tile');
-assert.match(view,/if\(frame\)\{frame\.hidden=true/,'Fallback must be hidden as soon as Leaflet owns the coordinates');
-assert.match(view,/drawGroups\(data\)/,'Accessible listings must update with filters');
-assert.match(view,/drawSpider\(group,center,key\)/,'Cluster click spiders all members');
-assert.match(view,/root\.L\.polyline\(\[latLng,tip\]/,'Spider legs rendered as lines');
-assert.match(view,/tiles\.on\('tileload'/,'Tiles load independently in Leaflet and not inside a second iframe');
-assert.match(page,/id="mapFallbackPins"/,'Legacy overlay node exists but must remain hidden without Leaflet');
-assert.match(view,/details\.addEventListener\('toggle'/,'Opening a locality group activates map focus');
-assert.match(view,/map\.flyTo\(\[c\.lat,c\.lon\],zoom/,'Locality group selection zooms interactive map');
-assert.match(view,/focusFallback\(c\.lat,c\.lon\)/,'Locality selection also zooms fallback map');
-assert.match(view,/el\.style\.visibility='visible'/,'Leaflet pins become visible without waiting for tiles');
-assert.match(view,/function drawFallback\(\)[\s\S]*?overlay\.hidden=true/,'Iframe fallback must hide its unaligned pin overlay');
-assert.match(view,/root\.L\.polyline\(\[latLng,tip\]/,'Spider legs still connect individual listing pins');
-const stylesheet=await readFile(new URL('../dashboard.css',import.meta.url),'utf8');
-assert.match(stylesheet,/\.map-interactive\.leaflet-container\{background:#edf0ea!important\}/,
-  'Leaflet owns the basemap rather than leaving a transparent iframe underneath');
-assert.match(stylesheet,/\.leaflet-pane,\.leaflet-layer,\.leaflet-image-layer/,'Leaflet map tiles and markers use positioned native layers');
 
-assert.match(stylesheet,/\.map-interactive \.leaflet-tile-pane\{visibility:visible!important\}/,
-  'Map tiles must remain visible and synchronized with pins');
-assert.match(stylesheet,/\.map-fallback-frame\{pointer-events:none\}/,
-  'Fallback iframe cannot be independently panned away from static pins');
-assert.match(view,/const frame=\$\('mapFallback'\);\s*if\(frame\)\{frame\.hidden=true/,
-  'Leaflet mode immediately hides the unsynchronized iframe');
-assert.doesNotMatch(view,/map\.on\('moveend',[\s\S]*?updateFrame\(\)/,
-  'Leaflet may not pan a second independent map as its basemap');
-assert.match(page,/id="mapFallbackNotice"/,
-  'Fallback has a clear explanation that pan is disabled');
-
+// Web Mercator: the same projected world pixel must be used for every tile and pin.
 const moosach=M.locality({location:'Alt-Moosach, München'});
 const milbertshofen=M.locality({location:'Milbertshofen, München'});
-assert.ok(moosach&&milbertshofen);
+assert.ok(moosach&&milbertshofen,'Two known Munich districts must resolve');
 assert.equal(moosach.key,'Alt-Moosach');
 assert.equal(milbertshofen.key,'Milbertshofen');
-assert.ok(moosach.lon>11.49&&moosach.lon<11.54,'Moosach longitude near Munich, not Fürstenfeldbruck');
+assert.ok(moosach.lon>11.49&&moosach.lon<11.54,'Moosach is not Fürstenfeldbruck');
 assert.ok(milbertshofen.lon>11.55&&milbertshofen.lon<11.60);
-const between=C.distanceKm(moosach,milbertshofen);
-assert.ok(between>3&&between<7,'Moosach and Milbertshofen are only a few km apart');
-const leafletBackup=await readFile(new URL('../map-leaflet-backup.js',import.meta.url),'utf8');
-assert.match(page,/map-leaflet-backup\.js/,'Alternative Leaflet loader must be included');
-assert.match(leafletBackup,/root\.ImmoRadarMap\?\.init\(\)/,'Successful backup should activate real Leaflet map');
-assert.doesNotMatch(view,/function fallbackPoint\(/,'Never project geographic pins onto a cross-origin iframe bbox');
-assert.match(view,/const overlay=\$\('mapFallbackPins'\)/,'Fallback overlay must be addressed');
-console.log('PASS: Moosach projection, native Leaflet map, backed-up CDN, no inaccurate iframe pins');
+assert.ok(C.distanceKm(moosach,milbertshofen)<7,'Moosach and Milbertshofen should be neighbors');
+for(const z of [6,9,12,13,16]){
+  for(const p of [moosach,milbertshofen,M.searchCenter]){
+    const xy=M.project(p.lat,p.lon,z);
+    const result=M.unproject(xy.x,xy.y,z);
+    assert.ok(Math.abs(result.lat-p.lat)<1e-7,'Latitude round trip at zoom '+z);
+    assert.ok(Math.abs(result.lon-p.lon)<1e-7,'Longitude round trip at zoom '+z);
+    const tileX=Math.floor(xy.x/256),offsetX=xy.x-tileX*256;
+    const tileY=Math.floor(xy.y/256),offsetY=xy.y-tileY*256;
+    assert.ok(Math.abs((tileX*256+offsetX)-xy.x)<1e-9,'Tile X and marker X share a coordinate');
+    assert.ok(Math.abs((tileY*256+offsetY)-xy.y)<1e-9,'Tile Y and marker Y share a coordinate');
+  }
+  const a=M.project(moosach.lat,moosach.lon,z);
+  const b=M.project(milbertshofen.lat,milbertshofen.lon,z);
+  assert.ok(a.x<b.x,'Moosach must remain west of Milbertshofen at zoom '+z);
+  assert.ok(Math.abs(b.x-a.x)<256*2**z/100,'Districts cannot appear dozens of km apart');
+}
+const page=await readFile(new URL('../index.html',import.meta.url),'utf8');
+const view=await readFile(new URL('../map-view.js',import.meta.url),'utf8');
+const styles=await readFile(new URL('../dashboard.css',import.meta.url),'utf8');
+assert.match(page,/<details class="filters" id="filterPanel">/);
+assert.match(page,/<form id="filters" class="filter-body"/);
+assert.match(page,/id="mapInteractive"/);
+assert.match(page,/id="unlocatedZone"/);
+assert.match(page,/id="unlocatedToggle"/);
+assert.match(page,/id="unlocatedList"/);
+assert.match(page,/src="\.\/map-view\.js\?v=20261021-mapnative"/);
+assert.doesNotMatch(page,/id="mapFallback"/,'Never show a separate OSM iframe map');
+assert.doesNotMatch(page,/leaflet@1\.9\.4/,'No dependency on external mapping JS CDN');
+assert.match(view,/D\.project\(lat,lon,state\.zoom\)/,'Map pins use the native tile projection');
+assert.match(view,/function paintTiles\(\)/,'Native tile renderer exists');
+assert.match(view,/function paintPins\(\)/,'Individual property pins exist independently of tile success');
+assert.match(view,/D\.clusters\(all\.positions,project,46\)/,'Clusters follow pixel geography');
+assert.match(view,/D\.spiderOffsets\(group\.length\)/,'Spiders include every grouped listing');
+assert.match(view,/function focus\(positions\)/,'Locality group zoom must work');
+assert.match(view,/paintUnlocated\(all\)/,'Unlocated apartments remain available');
+assert.match(view,/tiles\.appendChild\(image\)/,'Tiles are part of the same map container');
+assert.match(view,/root\.requestAnimationFrame\(render\)/,'Pan and zoom share one map frame');
+assert.doesNotMatch(view,/function fallbackPoint\(/,'No incorrectly aligned external iframe pins');
+assert.match(styles,/\.map-native-tile\{/,'Native tile layout');
+assert.match(styles,/\.map-native-pin\{/,'Visible map markers without library dependencies');
+assert.match(styles,/\.map-unlocated\{/,'Right-edge unlocated apartment cluster');
+console.log('PASS: shared tile/pin Web Mercator, zoom, clusters, locality selection, no-map fallback');
