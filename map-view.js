@@ -185,9 +185,10 @@ function update(next){
   const approximate=data.positions.filter(p=>p.approximate).length;
   const missing=data.unlocated.filter(o=>root.ImmoRadarCore?.type(o)==='apartment').length;
   if($('mapCount'))$('mapCount').textContent=data.positions.length+' Pins · '+missing+' ohne Ort';
-  if($('mapNote'))$('mapNote').textContent=
-    data.positions.length+' von '+rows.length+' Angeboten auf der Karte (davon '+approximate+' nur am ungefähren Ortsmittelpunkt). '+
-    missing+' Wohnungen ohne Standort rechts gesammelt. Ortsgruppen anklicken zum Zoomen, Cluster anklicken zum Auffächern. Kein Pin steht für eine überprüfte Gebäudeadresse.';
+  if($('mapNote'))$('mapNote').textContent=map
+    ? data.positions.length+' von '+rows.length+' Angeboten auf der Karte (davon '+approximate+' nur am ungefähren Ortsmittelpunkt). '+
+      missing+' Wohnungen ohne Standort rechts gesammelt. Ortsgruppen anklicken zum Zoomen, Cluster anklicken zum Auffächern. Kein Pin steht für eine überprüfte Gebäudeadresse.'
+    : data.positions.length+' Angebote mit zuordenbarem Ort ('+approximate+' ungefähre Ortsmittelpunkte). Die Ersatzkarte zeigt aus Genauigkeitsgründen KEINE einzelnen Pins; die Ortsgruppenliste öffnet jedes Angebot. '+missing+' Wohnungen ohne Standort rechts gesammelt.';
   if(map)renderMarkers();else drawFallback();
 }
 function init(){
