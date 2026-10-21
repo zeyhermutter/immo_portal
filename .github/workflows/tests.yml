@@ -22,6 +22,7 @@ jobs:
           node --check dashboard.js
           node --check map-core.js
           node --check map-view.js
+          node --check map-leaflet-backup.js
           node --check eml-dashboard.js
           node --check public-listings.js
           node --check email-parser.js
