@@ -1,6 +1,6 @@
 /* ImmoRadar property map: visible pins, locality focus, clustering + spiderfy.
  * Unlocated apartment drawer is non-geographic. Any locality position is APPROXIMATE.
- * Embedded OpenStreetMap fallback is retained; pin rendering never waits for tiles.
+ * Leaflet tiles and markers share ONE map transform; static iframe is used only when Leaflet is unavailable.
  */
 (function(root){'use strict';
 const D=root.ImmoRadarMapCore,$=id=>document.getElementById(id);
@@ -257,21 +257,44 @@ function init(){
     if(map)map.invalidateSize();
     else drawFallback();
   });
-  if(!root.L){update(rows);return}
+  if(!root.L){
+    // The fallback iframe is a static reference image with separately
+    // positioned pins. Disable iframe gestures so users cannot de-sync them.
+    const frame=$('mapFallback');
+    if(frame)frame.setAttribute('tabindex','-1');
+    const notice=$('mapFallbackNotice');if(notice)notice.hidden=false;
+    update(rows);return;
+  }
   try{
     map=root.L.map(el,{scrollWheelZoom:false,zoomControl:true});
-    // Show markers immediately. The iframe is visible underneath transparent
-    // Leaflet until the first real OSM tile succeeds.
-    const tilePane=map.getPane('tilePane');
-    if(tilePane)tilePane.style.visibility='hidden';
+    // Important: the Leaflet tile layer and property markers MUST share the
+    // same coordinate system. Never render the separately pannable OSM iframe
+    // underneath Leaflet markers: it drifts as soon as either map moves.
+    const frame=$('mapFallback');
+    if(frame){frame.hidden=true;frame.setAttribute('aria-hidden','true')}
+    const fallbackPins=$('mapFallbackPins');
+    if(fallbackPins)fallbackPins.hidden=true;
     const tiles=root.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
       maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap-Mitwirkende</a> · Orte: <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>'
     });
+    let errorCount=0,secondary=false;
     tiles.on('tileload',()=>{
-      if(tilesReady)return;
       tilesReady=true;
-      if(tilePane)tilePane.style.visibility='visible';
-      const frame=$('mapFallback');if(frame)frame.hidden=true;
+      const note=$('mapTileNotice');if(note)note.hidden=true;
+    });
+    // If the main OSM tile host is unreachable, try a second OSM-based
+    // provider. Either way pins remain attached to the Leaflet map, not an iframe.
+    tiles.on('tileerror',()=>{
+      if(tilesReady||secondary||++errorCount<4)return;
+      secondary=true;
+      const note=$('mapTileNotice');
+      if(note)note.hidden=false;
+      root.L.tileLayer('https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',{
+        maxZoom:19,
+        attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>'
+      }).on('tileload',()=>{tilesReady=true;if(note)note.hidden=true})
+        .addTo(map);
+      map.removeLayer(tiles);
     });
     tiles.addTo(map);
     const center=[D.searchCenter.lat,D.searchCenter.lon];
@@ -282,13 +305,7 @@ function init(){
     map.on('click',clearSpiders);
     map.on('zoomstart',clearSpiders);
     map.on('zoomend',renderMarkers);
-    map.on('moveend',()=>{
-      if(!tilesReady){
-        const b=map.getBounds();
-        fallbackBounds={west:b.getWest(),east:b.getEast(),south:b.getSouth(),north:b.getNorth()};
-        updateFrame();
-      }
-    });
+    // Leaflet alone owns panning/zooming; do not change a second map's bbox.
     el.style.visibility='visible';el.removeAttribute('aria-hidden');
     const host=$('mapFallbackPins');if(host)host.hidden=true;
     map.fitBounds(circle.getBounds(),{padding:[22,22],maxZoom:11});
@@ -298,6 +315,8 @@ function init(){
     if(map)try{map.remove()}catch{}
     map=null;groupLayer=null;spiderLayer=null;
     el.style.visibility='hidden';el.setAttribute('aria-hidden','true');
+    const frame=$('mapFallback');if(frame){frame.hidden=false;frame.removeAttribute('aria-hidden')}
+    const notice=$('mapFallbackNotice');if(notice)notice.hidden=false;
     if(root.console?.warn)root.console.warn('Falling back to OpenStreetMap embed and local pins',err);
     update(rows);
   }
