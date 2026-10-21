@@ -20,6 +20,8 @@ jobs:
           node --check app-core.js
           node --check snapshot-core.js
           node --check dashboard.js
+          node --check map-core.js
+          node --check map-view.js
           node --check eml-dashboard.js
           node --check public-listings.js
           node --check email-parser.js
@@ -31,6 +33,7 @@ jobs:
           node --check scripts/sync-feeds.mjs
           node tests/email-parser.test.mjs
           node tests/app-core.test.mjs
+          node tests/map-core.test.mjs
           node tests/snapshot-core.test.mjs
           node tests/market-check.mjs
           node scripts/sync-feeds.mjs --check
