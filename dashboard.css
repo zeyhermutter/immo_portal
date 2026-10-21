@@ -65,7 +65,7 @@
 .map-area-listing button{margin:0;font-size:11px;padding:6px 10px}
 /* Leaflet rendering essentials in case its third-party stylesheet is blocked. */
 .map-interactive.leaflet-container{position:absolute;overflow:hidden;outline:0;touch-action:pan-x pan-y;background:#e9f0ea}
-.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas{position:absolute;left:0;top:0}
+.leaflet-pane,.leaflet-layer,.leaflet-image-layer,.leaflet-zoom-box,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas{position:absolute;left:0;top:0}
 .leaflet-map-pane{position:absolute;left:0;top:0}
 .leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}
 .leaflet-container img.leaflet-tile{max-width:none!important;max-height:none!important}
@@ -114,11 +114,9 @@
   .map-unlocated-panel{width:min(300px,calc(100vw - 36px));max-height:196px}
 }
 
-/* Pin visibility must never depend on successful tile downloads.
- * A transparent Leaflet canvas overlays the embedded OpenStreetMap fallback.
+/* The standalone Leaflet map owns both tiles and geographic pins.
+ * Never place map markers on an independently zoomed iframe.
  */
-.map-interactive.leaflet-container{background:transparent!important}
-.map-interactive .leaflet-tile-pane{visibility:hidden}
 .map-fallback-pins{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
 .map-fallback-pins[hidden]{display:none}
 .map-fallback-frame{z-index:0}
