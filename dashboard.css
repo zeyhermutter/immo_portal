@@ -113,3 +113,22 @@
   .map-unlocated-badge strong{min-width:26px;height:26px}
   .map-unlocated-panel{width:min(300px,calc(100vw - 36px));max-height:196px}
 }
+
+/* Pin visibility must never depend on successful tile downloads.
+ * A transparent Leaflet canvas overlays the embedded OpenStreetMap fallback.
+ */
+.map-interactive.leaflet-container{background:transparent!important}
+.map-interactive .leaflet-tile-pane{visibility:hidden}
+.map-fallback-pins{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+.map-fallback-pins[hidden]{display:none}
+.map-fallback-frame{z-index:0}
+.map-fallback-pin{position:absolute;z-index:4;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;background:#bc8339;color:#fff;width:31px;height:31px;font-size:12px;font-weight:850;line-height:1;display:grid;place-items:center;box-shadow:0 2px 9px #1a2b2260;cursor:pointer;pointer-events:auto}
+.map-fallback-pin:focus-visible,.map-fallback-pin:hover{outline:3px solid #e7ba5e;outline-offset:1px}
+.map-fallback-cluster{width:40px;height:40px;background:#213e37;font-size:14px}
+.map-fallback-spider{z-index:6}
+.map-fallback-lines{position:absolute;left:0;top:0;z-index:3;pointer-events:none}
+.map-fallback-lines line{stroke:#795c37;stroke-width:1.8}
+.map-area-group>summary{color:#176044;font-weight:750}
+.map-area-group>summary:focus-visible{outline:2px solid #176044;outline-offset:-2px}
+.map-area-group>summary:hover{background:#eef8ee}
+@media(max-width:600px){.map-fallback-pin{width:28px;height:28px}.map-fallback-cluster{width:36px;height:36px}}
