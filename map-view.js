@@ -153,22 +153,37 @@ function paintGroupList(all){
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push(pos);
   }
+  // Thousands of source alerts should not create thousands of invisible DOM
+  // nodes on page load. Only render a group's listing rows when it opens.
   for(const [key,group] of groups){
     const d=node('details',undefined,'map-area-group');
-    const title=node('summary',key+' · '+group.length+' Angebote · auf Karte zoomen');
-    d.appendChild(title);
-    d.addEventListener('toggle',()=>{if(d.open)focus(group)});
+    d.appendChild(node('summary',key+' · '+group.length+' Angebote · auf Karte zoomen'));
     const inner=node('div',undefined,'map-area-group-content');
-    inner.appendChild(node('p','Ortsmittelpunkt bedeutet keine genaue Gebäudeadresse.','map-popup-disclaimer'));
-    for(const p of group)inner.appendChild(row(p.listing));
-    d.appendChild(inner);host.appendChild(d);
+    d.appendChild(inner);
+    let populated=false;
+    d.addEventListener('toggle',()=>{
+      if(!d.open)return;
+      if(!populated){
+        inner.appendChild(node('p','Ortsmittelpunkt bedeutet keine genaue Gebäudeadresse.','map-popup-disclaimer'));
+        for(const p of group)inner.appendChild(row(p.listing));
+        populated=true;
+      }
+      focus(group);
+    });
+    host.appendChild(d);
   }
   if(all.unlocated.length){
     const d=node('details',undefined,'map-area-group');
     d.appendChild(node('summary','Ohne Standort · '+all.unlocated.length+' Angebote'));
     const inner=node('div',undefined,'map-area-group-content');
-    for(const o of all.unlocated)inner.appendChild(row(o));
-    d.appendChild(inner);host.appendChild(d);
+    d.appendChild(inner);
+    let populated=false;
+    d.addEventListener('toggle',()=>{
+      if(!d.open||populated)return;
+      for(const o of all.unlocated)inner.appendChild(row(o));
+      populated=true;
+    });
+    host.appendChild(d);
   }
   if(!host.children.length)host.appendChild(node('p','Keine Angebote in dieser Auswahl.'));
 }
