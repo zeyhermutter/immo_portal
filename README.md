@@ -2,6 +2,16 @@
 
 Statisches Recherchewerkzeug für **85622 Feldkirchen bei München (100 km)**. Es werden **keine erfundenen Angebote** angezeigt.
 
+## Einmaliger Gmail-Datenabgleich vom 7. November 2026
+
+Die eigenen Immobilien-Suchbenachrichtigungen wurden einmalig über die verbundene Gmail-App in ChatGPT gelesen und für dieses Repository aufbereitet. Berücksichtigt wurden **412 ImmoScout24-Suchmails** und **239 Kleinanzeigen-Suchmails**. Die acht statischen Dateien `gmail-backfill-scout.js`, `gmail-scout-b2.js` bis `gmail-scout-b5.js` und `gmail-klein-b1.js` bis `gmail-klein-b3.js` enthalten insgesamt **3.939 unterschiedliche kanonische Angebotslinks**, davon 3.313 von ImmoScout24 und 626 von Kleinanzeigen. Wiederholte Benachrichtigungen und Überschneidungen mit dem bisherigen Bestand werden beim Laden über die Anbieter-ID dedupliziert.
+
+Es werden **keine Original-E-Mails, Gmail-IDs, Absender, Empfänger, Trackingparameter oder persönliche Suchauftrags-Token** veröffentlicht. Straßenadressen wurden auf Orts- oder Stadtteilniveau gekürzt. Ein auffällig falscher, extrem hoher Angebotspreis wurde als unbekannt gespeichert. Aus unklaren Kleinanzeigen-Wohnungshinweisen werden Mietangebote mit erkennbaren Mietpreisen nicht als Kaufangebote importiert. Die Daten sind **historisch beobachtete Kaufanzeigen**; weder heutige Verfügbarkeit noch ein Marktwert sind damit bestätigt.
+
+Bei Immowelt wurden 445 Nachrichten gefunden, darunter 286 auf Immobilienangebote bezogene Benachrichtigungen. Ihre Angebotslinks bestanden in den überprüften Nachrichten nur aus personenbezogenen Weiterleitungs-URLs, nicht aus stabilen kanonischen Exposé-Links. **Immowelt-Angebote wurden deshalb nicht in das öffentliche Datenpaket übernommen**; solche Links werden nicht erraten oder mitsamt Tracking veröffentlicht.
+
+Das ImmoPortal benötigt weiterhin **keinen Gmail-Zugang** und ruft E-Mails nicht selbst ab. Das ist ein einmaliger Stand, **keine automatische Synchronisierung**. Die Trefferliste zeigt initial 80 Karten und bietet „Weitere Angebote anzeigen“; die Kartengruppierung ist für mehrere Tausend Beobachtungen optimiert und die Ortsgruppen laden ihre Detailzeilen erst beim Öffnen. Die Tests `tests/gmail-backfill.test.mjs` und die GitHub-Actions-CI prüfen Format, Datenschutz, Deduplizierbarkeit und Skalierung.
+
 ## Suchbenachrichtigungen aus E-Mails auswerten
 
 Neu: Der Tab **„E-Mail-Treffer“** verarbeitet von dir selbst exportierte **ImmoScout24-Suchbenachrichtigungen** direkt im Browser. Es gibt **keine Gmail-Verbindung** im Webportal und aktuell keine automatische Hintergrundauswertung des E-Mail-Postfachs.
