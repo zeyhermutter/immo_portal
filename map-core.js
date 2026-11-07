@@ -116,19 +116,38 @@ function pins(rows){
  */
 function clusters(positions,project,threshold=44){
   if(!Array.isArray(positions)||!positions.length)return [];
-  const xy=positions.map(p=>project(p.lat,p.lon));
-  const parent=positions.map((_,i)=>i);
+  const radius=Math.max(1,Number(threshold)||44),radiusSq=radius*radius;
+  // Many alert messages locate distinct objects at exactly the same town centre.
+  // Combine identical pixels BEFORE performing spatial neighbor comparisons.
+  const unique=[],pixelIndex=new Map(),sourceToPixel=[];
+  for(const p of positions){
+    const xy=project(p.lat,p.lon),key=xy.x+','+xy.y;
+    let index=pixelIndex.get(key);
+    if(index===undefined){index=unique.length;unique.push(xy);pixelIndex.set(key,index)}
+    sourceToPixel.push(index);
+  }
+  const parent=unique.map((_,i)=>i),cells=new Map();
   const find=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i]}return i};
   const join=(a,b)=>{const ra=find(a),rb=find(b);if(ra!==rb)parent[rb]=ra};
-  for(let i=0;i<positions.length;i++)for(let j=i+1;j<positions.length;j++){
-    const dx=xy[i].x-xy[j].x,dy=xy[i].y-xy[j].y;
-    if(dx*dx+dy*dy<=threshold*threshold)join(i,j);
+  for(let i=0;i<unique.length;i++){
+    const p=unique[i],cx=Math.floor(p.x/radius),cy=Math.floor(p.y/radius);
+    for(let x=cx-1;x<=cx+1;x++)for(let y=cy-1;y<=cy+1;y++){
+      const bucket=cells.get(x+','+y);
+      if(!bucket)continue;
+      for(const j of bucket){
+        const dx=p.x-unique[j].x,dy=p.y-unique[j].y;
+        if(dx*dx+dy*dy<=radiusSq)join(i,j);
+      }
+    }
+    const key=cx+','+cy;
+    if(!cells.has(key))cells.set(key,[]);
+    cells.get(key).push(i);
   }
   const groups=new Map();
   for(let i=0;i<positions.length;i++){
-    const k=find(i);
-    if(!groups.has(k))groups.set(k,[]);
-    groups.get(k).push(positions[i]);
+    const root=find(sourceToPixel[i]);
+    if(!groups.has(root))groups.set(root,[]);
+    groups.get(root).push(positions[i]);
   }
   return [...groups.values()];
 }
