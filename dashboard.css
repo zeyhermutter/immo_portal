@@ -117,3 +117,6 @@
   .map-map-warning{max-width:calc(100% - 24px);bottom:26px}
 }
 
+/* Progressive result loading for multi-thousand-record email backfills. */
+.more-listings{grid-column:1 / -1;width:100%;min-height:50px;display:block;margin:14px 0 20px;cursor:pointer;font-weight:800}
+.more-listings:hover,.more-listings:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
