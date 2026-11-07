@@ -20,6 +20,7 @@ jobs:
           node --check app-core.js
           node --check snapshot-core.js
           node --check dashboard.js
+          for f in gmail-backfill-scout.js gmail-scout-b*.js gmail-klein-b*.js; do node --check "$f"; done
           node --check map-core.js
           node --check map-view.js
           node --check map-leaflet-backup.js
@@ -36,6 +37,7 @@ jobs:
           node tests/app-core.test.mjs
           node tests/map-core.test.mjs
           node tests/map-dom.test.mjs
+          node tests/gmail-backfill.test.mjs
           node tests/snapshot-core.test.mjs
           node tests/market-check.mjs
           node scripts/sync-feeds.mjs --check
